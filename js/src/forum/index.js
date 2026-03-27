@@ -19,11 +19,25 @@ class CompactForumWidget extends Component {
 
     oncreate(vnode) {
         super.oncreate(vnode);
+        // Use native listener directly on the toggle button to avoid Mithril event delegation issues
+        const toggle = this.element.querySelector('.CompactWidget-toggle');
+        if (toggle) {
+            this.toggleEl = toggle;
+            this.boundToggleClick = (e) => {
+                e.stopPropagation();
+                this.expanded = !this.expanded;
+                m.redraw();
+            };
+            toggle.addEventListener('click', this.boundToggleClick);
+        }
         document.addEventListener('click', this.boundDocClick);
     }
 
     onremove(vnode) {
         super.onremove(vnode);
+        if (this.toggleEl && this.boundToggleClick) {
+            this.toggleEl.removeEventListener('click', this.boundToggleClick);
+        }
         document.removeEventListener('click', this.boundDocClick);
     }
 
@@ -32,10 +46,6 @@ class CompactForumWidget extends Component {
         if (this.element && this.element.contains(e.target)) return;
         this.expanded = false;
         m.redraw();
-    }
-
-    toggleExpand() {
-        this.expanded = !this.expanded;
     }
 
     view() {
@@ -113,11 +123,6 @@ class CompactForumWidget extends Component {
                 // Expand/collapse toggle
                 (canViewOnline || latestUser)
                     ? m('button.CompactWidget-toggle.Button.Button--icon.Button--link', {
-                        onclick: (e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            this.toggleExpand();
-                        },
                         'aria-label': this.expanded
                             ? app.translator.trans('ekumanov-forum-widgets.forum.aria.collapse_details')
                             : app.translator.trans('ekumanov-forum-widgets.forum.aria.expand_details'),

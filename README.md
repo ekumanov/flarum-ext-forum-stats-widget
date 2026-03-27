@@ -2,6 +2,16 @@
 
 A compact sidebar widget that displays online users, forum statistics (discussions, posts, users), and the latest registration — all in a single, space-efficient widget.
 
+## Screenshots
+
+| Desktop (collapsed) | Desktop (expanded) |
+|---|---|
+| ![Collapsed](screenshots/desktop-collapsed.png) | ![Expanded](screenshots/desktop-expanded.png) |
+
+| Mobile (collapsed) | Mobile (expanded) |
+|---|---|
+| ![Collapsed](screenshots/mobile-collapsed.jpg) | ![Expanded](screenshots/mobile-expanded.jpg) |
+
 ## Features
 
 - **Online Users** — Shows avatars of currently online users, sorted by most recently active. Users beyond the configurable maximum appear as a "+N more" indicator. Users who have hidden their online status are shown as a separate "hidden" count with a dashed circle.
