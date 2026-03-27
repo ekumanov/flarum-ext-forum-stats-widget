@@ -83,7 +83,7 @@ php flarum cache:clear
 ## Links
 
 - [Packagist](https://packagist.org/packages/ekumanov/flarum-ext-forum-widgets)
-- [Discuss](https://discuss.flarum.org/d/TODO)
+- [Discuss](https://discuss.flarum.org/d/38976-forum-stats-widget-with-online-users-too)
 - [Report Issues](https://github.com/ekumanov/flarum-ext-forum-widgets/issues)
 
 ## License
