@@ -8,21 +8,21 @@ A compact widget that displays online users, forum statistics (discussions, post
 |---|---|
 | ![Collapsed](screenshots/desktop-inside-toolbar-collapsed.png) | ![Expanded](screenshots/desktop-inside-toolbar-expanded.png) |
 
-| Mobile — Above toolbar (collapsed) | Mobile — Below toolbar (expanded) |
+| Mobile — Above toolbar (collapsed) | Mobile — Above toolbar (expanded) |
 |---|---|
-| ![Collapsed](screenshots/mobile-above-toolbar-collapsed.png) | ![Expanded](screenshots/mobile-below-toolbar-collapsed.png) |
+| ![Mobile collapsed](screenshots/mobile-above-toolbar-collapsed.png) | ![Mobile expanded](screenshots/mobile-above-toolbar-expanded.png) |
 
 | Desktop — Above toolbar | Desktop — Below toolbar |
 |---|---|
 | ![Above toolbar](screenshots/desktop-above-toolbar-collapsed.png) | ![Below toolbar](screenshots/desktop-below-toolbar-collapsed.png) |
 
-| Mobile — Above toolbar (expanded) | Desktop — Classic sidebar |
+| Desktop — Classic sidebar | Desktop — Classic sidebar (expanded) |
 |---|---|
-| ![Mobile expanded](screenshots/mobile-above-toolbar-expanded.png) | ![Classic collapsed](screenshots/desktop-classic-collapsed.png) |
+| ![Classic collapsed](screenshots/desktop-classic-collapsed.png) | ![Classic expanded](screenshots/desktop-classic-expanded.png) |
 
-| Desktop — Classic sidebar (expanded) |
+| Mobile — Below toolbar (collapsed) |
 |---|
-| ![Classic expanded](screenshots/desktop-classic-expanded.png) |
+| ![Mobile below toolbar](screenshots/mobile-below-toolbar-collapsed.png) |
 
 ## Features
 
