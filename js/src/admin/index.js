@@ -15,7 +15,7 @@ app.initializers.add('ekumanov/forum-widgets', () => {
             'classic': app.translator.trans('ekumanov-forum-widgets.admin.settings.widget_layout_classic'),
             'full-width': app.translator.trans('ekumanov-forum-widgets.admin.settings.widget_layout_full_width'),
         },
-        default: 'classic',
+        default: 'full-width',
     });
     reg.registerSetting({
         setting: 'ekumanov-forum-widgets.bar_position_desktop',
@@ -27,7 +27,7 @@ app.initializers.add('ekumanov/forum-widgets', () => {
             'inside-toolbar': app.translator.trans('ekumanov-forum-widgets.admin.settings.bar_position_inside'),
             'below-toolbar': app.translator.trans('ekumanov-forum-widgets.admin.settings.bar_position_below'),
         },
-        default: 'below-toolbar',
+        default: 'inside-toolbar',
     });
     reg.registerSetting({
         setting: 'ekumanov-forum-widgets.bar_position_mobile',
@@ -38,7 +38,7 @@ app.initializers.add('ekumanov/forum-widgets', () => {
             'above-toolbar': app.translator.trans('ekumanov-forum-widgets.admin.settings.bar_position_above'),
             'below-toolbar': app.translator.trans('ekumanov-forum-widgets.admin.settings.bar_position_below'),
         },
-        default: 'below-toolbar',
+        default: 'above-toolbar',
     });
     reg.registerSetting({
         setting: 'ekumanov-forum-widgets.widget_position',

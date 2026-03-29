@@ -18,9 +18,9 @@ return [
     new Extend\Locales(__DIR__ . '/locale'),
 
     (new Extend\Settings())
-        ->default('ekumanov-forum-widgets.widget_layout', 'classic')
-        ->default('ekumanov-forum-widgets.bar_position_desktop', 'below-toolbar')
-        ->default('ekumanov-forum-widgets.bar_position_mobile', 'below-toolbar')
+        ->default('ekumanov-forum-widgets.widget_layout', 'full-width')
+        ->default('ekumanov-forum-widgets.bar_position_desktop', 'inside-toolbar')
+        ->default('ekumanov-forum-widgets.bar_position_mobile', 'above-toolbar')
         ->default('ekumanov-forum-widgets.show_online_users', true)
         ->default('ekumanov-forum-widgets.max_online_users', 15)
         ->default('ekumanov-forum-widgets.max_online_users_privileged', 40)

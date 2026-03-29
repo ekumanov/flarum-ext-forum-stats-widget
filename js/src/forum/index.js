@@ -256,9 +256,9 @@ app.initializers.add('ekumanov/forum-widgets', () => {
     Forum.prototype.latestRegisteredUser = Model.hasOne('latestRegisteredUser');
 
     // Helper: read settings lazily (app.forum is not available at initializer time)
-    const getLayout = () => app.forum.attribute('forumStatsWidgetLayout') || 'classic';
-    const getDesktopPos = () => app.forum.attribute('forumStatsBarPositionDesktop') || 'below-toolbar';
-    const getMobilePos = () => app.forum.attribute('forumStatsBarPositionMobile') || 'below-toolbar';
+    const getLayout = () => app.forum.attribute('forumStatsWidgetLayout') || 'full-width';
+    const getDesktopPos = () => app.forum.attribute('forumStatsBarPositionDesktop') || 'inside-toolbar';
+    const getMobilePos = () => app.forum.attribute('forumStatsBarPositionMobile') || 'above-toolbar';
     const contentPriority = (pos) => pos === 'above-toolbar' ? 101 : 95;
 
     // Desktop: classic sidebar layout

@@ -4,13 +4,25 @@ A compact widget that displays online users, forum statistics (discussions, post
 
 ## Screenshots
 
-| Desktop (collapsed) | Desktop (expanded) |
+| Desktop — Inside toolbar (collapsed) | Desktop — Inside toolbar (expanded) |
 |---|---|
-| ![Collapsed](screenshots/desktop-collapsed.png) | ![Expanded](screenshots/desktop-expanded.png) |
+| ![Collapsed](screenshots/desktop-inside-toolbar-collapsed.png) | ![Expanded](screenshots/desktop-inside-toolbar-expanded.png) |
 
-| Mobile (collapsed) | Mobile (expanded) |
+| Mobile — Above toolbar (collapsed) | Mobile — Below toolbar (expanded) |
 |---|---|
-| ![Collapsed](screenshots/mobile-collapsed.jpg) | ![Expanded](screenshots/mobile-expanded.jpg) |
+| ![Collapsed](screenshots/mobile-above-toolbar-collapsed.png) | ![Expanded](screenshots/mobile-below-toolbar-collapsed.png) |
+
+| Desktop — Above toolbar | Desktop — Below toolbar |
+|---|---|
+| ![Above toolbar](screenshots/desktop-above-toolbar-collapsed.png) | ![Below toolbar](screenshots/desktop-below-toolbar-collapsed.png) |
+
+| Mobile — Above toolbar (expanded) | Desktop — Classic sidebar |
+|---|---|
+| ![Mobile expanded](screenshots/mobile-above-toolbar-expanded.png) | ![Classic collapsed](screenshots/desktop-classic-collapsed.png) |
+
+| Desktop — Classic sidebar (expanded) |
+|---|
+| ![Classic expanded](screenshots/desktop-classic-expanded.png) |
 
 ## Features
 
@@ -48,9 +60,9 @@ Then enable the extension in the admin panel under **Extensions > Forum Stats Wi
 
 | Setting | Default | Description |
 |---------|---------|-------------|
-| Widget layout | Sidebar (classic) | Classic sidebar widget or full-width bar above discussions |
-| Bar position (desktop) | Below the toolbar | Where to place the bar relative to the toolbar (full-width only). Options: above, inside, or below |
-| Bar position (mobile) | Below the toolbar | Where to place the bar on mobile. Options: above or below the toolbar |
+| Widget layout | Full width | Classic sidebar widget or full-width bar above discussions |
+| Bar position (desktop) | Inside the toolbar | Where to place the bar relative to the toolbar (full-width only). Options: above, inside, or below |
+| Bar position (mobile) | Above the toolbar | Where to place the bar on mobile. Options: above or below the toolbar |
 | Widget sidebar position | -10 | Controls sidebar position; lower values = further down (classic layout only) |
 | Show online users | Enabled | Master toggle for the online users feature |
 | Maximum online users to display | 15 | Max avatars shown for regular users; overflow shown as "+N more" |
