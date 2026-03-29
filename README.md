@@ -8,9 +8,9 @@ A compact widget that displays online users, forum statistics (discussions, post
 |---|---|
 | ![Collapsed](screenshots/desktop-inside-toolbar-collapsed.png) | ![Expanded](screenshots/desktop-inside-toolbar-expanded.png) |
 
-| Mobile — Above toolbar (collapsed) | Mobile — Above toolbar (expanded) |
-|---|---|
-| ![Mobile collapsed](screenshots/mobile-above-toolbar-collapsed.png) | ![Mobile expanded](screenshots/mobile-above-toolbar-expanded.png) |
+| Mobile — Above toolbar (collapsed) | Mobile — Above toolbar (expanded) | Mobile — Below toolbar (collapsed) |
+|---|---|---|
+| ![Mobile collapsed](screenshots/mobile-above-toolbar-collapsed.png) | ![Mobile expanded](screenshots/mobile-above-toolbar-expanded.png) | ![Mobile below toolbar](screenshots/mobile-below-toolbar-collapsed.png) |
 
 | Desktop — Above toolbar | Desktop — Below toolbar |
 |---|---|
@@ -19,10 +19,6 @@ A compact widget that displays online users, forum statistics (discussions, post
 | Desktop — Classic sidebar | Desktop — Classic sidebar (expanded) |
 |---|---|
 | ![Classic collapsed](screenshots/desktop-classic-collapsed.png) | ![Classic expanded](screenshots/desktop-classic-expanded.png) |
-
-| Mobile — Below toolbar (collapsed) |
-|---|
-| ![Mobile below toolbar](screenshots/mobile-below-toolbar-collapsed.png) |
 
 ## Features
 
