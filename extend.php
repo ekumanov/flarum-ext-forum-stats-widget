@@ -18,11 +18,18 @@ return [
     new Extend\Locales(__DIR__ . '/locale'),
 
     (new Extend\Settings())
+        ->default('ekumanov-forum-widgets.widget_layout', 'classic')
+        ->default('ekumanov-forum-widgets.bar_position_desktop', 'below-toolbar')
+        ->default('ekumanov-forum-widgets.bar_position_mobile', 'below-toolbar')
         ->default('ekumanov-forum-widgets.show_online_users', true)
         ->default('ekumanov-forum-widgets.max_online_users', 15)
         ->default('ekumanov-forum-widgets.max_online_users_privileged', 40)
         ->default('ekumanov-forum-widgets.last_seen_interval', 5)
         ->default('ekumanov-forum-widgets.online_users_cache_ttl', 30)
+        ->default('ekumanov-forum-widgets.show_discussions_count', true)
+        ->default('ekumanov-forum-widgets.show_posts_count', true)
+        ->default('ekumanov-forum-widgets.show_users_count', true)
+        ->default('ekumanov-forum-widgets.show_latest_registration', true)
         ->default('ekumanov-forum-widgets.stats_cache_duration', 600)
         ->default('ekumanov-forum-widgets.ignore_private_discussions', false)
         ->default('ekumanov-forum-widgets.widget_position', -10),

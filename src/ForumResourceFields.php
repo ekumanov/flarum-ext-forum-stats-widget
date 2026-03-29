@@ -50,28 +50,41 @@ class ForumResourceFields
                     && $context->getActor()->hasPermission('ekumanov-forum-widgets.viewOnlineUsers'))
                 ->get(fn ($model, Context $context) => $this->getOnlineUserModels($context->getActor())),
 
-            // Expose widget_position to the frontend
+            // Expose widget settings to the frontend
             Schema\Integer::make('forumStatsWidgetPosition')
                 ->get(fn () => (int) $this->settings->get('ekumanov-forum-widgets.widget_position', -10)),
+
+            Schema\Str::make('forumStatsWidgetLayout')
+                ->get(fn () => $this->settings->get('ekumanov-forum-widgets.widget_layout', 'classic')),
+
+            Schema\Str::make('forumStatsBarPositionDesktop')
+                ->get(fn () => $this->settings->get('ekumanov-forum-widgets.bar_position_desktop', 'below-toolbar')),
+
+            Schema\Str::make('forumStatsBarPositionMobile')
+                ->get(fn () => $this->settings->get('ekumanov-forum-widgets.bar_position_mobile', 'below-toolbar')),
 
             // === Forum Statistics ===
 
             Schema\Integer::make('forumStatsDiscussionsCount')
-                ->visible(fn ($model, Context $context) => $context->getActor()->hasPermission('ekumanov-forum-widgets.viewStats.discussionsCount'))
+                ->visible(fn ($model, Context $context) => (bool) $this->settings->get('ekumanov-forum-widgets.show_discussions_count', true)
+                    && $context->getActor()->hasPermission('ekumanov-forum-widgets.viewStats.discussionsCount'))
                 ->get(fn ($model, Context $context) => $this->getStats()['discussion_count'] ?? 0),
 
             Schema\Integer::make('forumStatsPostsCount')
-                ->visible(fn ($model, Context $context) => $context->getActor()->hasPermission('ekumanov-forum-widgets.viewStats.postsCount'))
+                ->visible(fn ($model, Context $context) => (bool) $this->settings->get('ekumanov-forum-widgets.show_posts_count', true)
+                    && $context->getActor()->hasPermission('ekumanov-forum-widgets.viewStats.postsCount'))
                 ->get(fn ($model, Context $context) => $this->getStats()['post_count'] ?? 0),
 
             Schema\Integer::make('forumStatsUsersCount')
-                ->visible(fn ($model, Context $context) => $context->getActor()->hasPermission('ekumanov-forum-widgets.viewStats.usersCount'))
+                ->visible(fn ($model, Context $context) => (bool) $this->settings->get('ekumanov-forum-widgets.show_users_count', true)
+                    && $context->getActor()->hasPermission('ekumanov-forum-widgets.viewStats.usersCount'))
                 ->get(fn ($model, Context $context) => $this->getStats()['user_count'] ?? 0),
 
             Schema\Relationship\ToOne::make('latestRegisteredUser')
                 ->type('users')
                 ->includable()
-                ->visible(fn ($model, Context $context) => $context->getActor()->hasPermission('ekumanov-forum-widgets.viewStats.latestMember'))
+                ->visible(fn ($model, Context $context) => (bool) $this->settings->get('ekumanov-forum-widgets.show_latest_registration', true)
+                    && $context->getActor()->hasPermission('ekumanov-forum-widgets.viewStats.latestMember'))
                 ->get(fn ($model, Context $context) => $this->getLatestUser()),
         ];
     }

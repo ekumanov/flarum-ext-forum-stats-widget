@@ -24,12 +24,22 @@
     gap: 4px;
 }
 
+/* Classic sidebar layout: 2x2 grid */
 .CompactWidget-stats {
     flex: 1;
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 2px 4px;
     min-width: 0;
+}
+
+/* Full-width layout: single row, clickable bar */
+.CompactWidget--fullWidth .CompactWidget-stats {
+    grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+}
+
+.CompactWidget--fullWidth.CompactWidget--desktop .CompactWidget-bar {
+    cursor: pointer;
 }
 
 /* --- Stat items --- */
@@ -60,6 +70,29 @@
 .CompactWidget-stat--online i {
     color: #4CAF50;
     opacity: 1;
+}
+
+/* Inside-toolbar variant: match the height of the toolbar dropdown button */
+.CompactWidget--inToolbar {
+    flex: 1;
+    margin: 0;
+    align-self: center;
+}
+
+.CompactWidget--inToolbar .CompactWidget-bar {
+    min-height: 0;
+    padding: 9px 13px;
+}
+
+/* Text labels (full-width desktop only) */
+.CompactWidget-statLabel {
+    display: none;
+}
+
+@media (min-width: 768px) {
+    .CompactWidget--fullWidth .CompactWidget-statLabel {
+        display: inline;
+    }
 }
 
 /* --- Toggle arrow --- */
@@ -230,14 +263,30 @@
     flex-shrink: 0;
 }
 
+/* --- Viewport show/hide --- */
+
+/* Desktop instance: hide on mobile */
+@media (max-width: 767px) {
+    .CompactWidget--desktop {
+        display: none !important;
+    }
+}
+
+/* Mobile instance: hide on desktop */
+@media (min-width: 768px) {
+    .CompactWidget--mobile {
+        display: none !important;
+    }
+}
+
 /* --- Responsive --- */
 
-/* Mobile portrait — full width, justified items */
+/* Mobile portrait */
 @media (max-width: 767px) {
     .CompactWidget {
         width: 100%;
         order: 100;
-        margin-top: 8px;
+        margin-top: 4px;
         margin-bottom: 8px;
     }
 

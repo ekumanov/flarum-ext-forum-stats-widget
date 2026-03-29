@@ -1,6 +1,6 @@
 # Forum Stats Widget for Flarum 2.0
 
-A compact sidebar widget that displays online users, forum statistics (discussions, posts, users), and the latest registration — all in a single, space-efficient widget.
+A compact widget that displays online users, forum statistics (discussions, posts, users), and the latest registration — with configurable layout options for both desktop and mobile.
 
 ## Screenshots
 
@@ -15,13 +15,17 @@ A compact sidebar widget that displays online users, forum statistics (discussio
 ## Features
 
 - **Online Users** — Shows avatars of currently online users, sorted by most recently active. Users beyond the configurable maximum appear as a "+N more" indicator. Users who have hidden their online status are shown as a separate "hidden" count with a dashed circle.
-- **Forum Statistics** — Displays discussion count, post count, and total user count with icons and tooltips.
+- **Forum Statistics** — Displays discussion count, post count, and total user count with plural-aware labels.
 - **Latest Registration** — Shows the most recently registered user with their avatar and display name.
 - **Expandable Panel** — Compact stats bar with a click-to-expand panel for detailed information.
+- **Configurable Layout** — Choose between a classic sidebar widget or a full-width bar above the discussion list. Full-width mode supports positioning above, inside, or below the toolbar on desktop.
+- **Separate Desktop/Mobile Settings** — Independent bar position settings for desktop and mobile views.
+- **Stat Toggles** — Each statistic (discussions, posts, users, latest registration) can be individually enabled or disabled from the admin panel.
 - **Two-Tier Caching** — Separate caches for privileged users (admins/mods who can see hidden users) and regular users, each with its own configurable display limit. Zero database queries on cache hit.
 - **Event-Driven Cache Invalidation** — Caches are automatically flushed when discussions, posts, or users are created or deleted.
 - **Granular Permissions** — Each stat (online users, discussions, posts, users, latest registration) can be independently permission-gated. All default to visible for guests.
-- **Configurable** — Widget sidebar position, cache durations, online interval, max display limits, and more — all from the admin panel.
+- **Accessible** — ARIA labels, roles, keyboard navigation, and screen reader support throughout.
+- **Fully Localizable** — All strings use locale keys with ICU plural support.
 
 ## Requirements
 
@@ -44,14 +48,18 @@ Then enable the extension in the admin panel under **Extensions > Forum Stats Wi
 
 | Setting | Default | Description |
 |---------|---------|-------------|
+| Widget layout | Sidebar (classic) | Classic sidebar widget or full-width bar above discussions |
+| Bar position (desktop) | Below the toolbar | Where to place the bar relative to the toolbar (full-width only). Options: above, inside, or below |
+| Bar position (mobile) | Below the toolbar | Where to place the bar on mobile. Options: above or below the toolbar |
+| Widget sidebar position | -10 | Controls sidebar position; lower values = further down (classic layout only) |
 | Show online users | Enabled | Master toggle for the online users feature |
 | Maximum online users to display | 15 | Max avatars shown for regular users; overflow shown as "+N more" |
 | Maximum online users to display (privileged) | 40 | Max avatars for users with "Always view user last seen time" permission |
 | Last seen interval (minutes) | 5 | How many minutes since last activity to consider a user online |
 | Online users cache duration (seconds) | 30 | How long to cache the online users list |
+| Show discussions/posts/users/latest | All enabled | Individual toggles for each statistic |
 | Statistics cache duration (seconds) | 600 | How long to cache discussion/post/user counts and latest registration |
 | Ignore private discussions in count | Disabled | Exclude private discussions from the count |
-| Widget sidebar position (priority) | -10 | Controls sidebar position; lower values = further down |
 
 ### Permissions
 

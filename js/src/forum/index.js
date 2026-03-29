@@ -7,6 +7,7 @@ import username from 'flarum/common/helpers/username';
 import formatNumber from 'flarum/common/utils/formatNumber';
 import Link from 'flarum/common/components/Link';
 import Tooltip from 'flarum/common/components/Tooltip';
+import IndexPage from 'flarum/forum/components/IndexPage';
 import IndexSidebar from 'flarum/forum/components/IndexSidebar';
 import Component from 'flarum/common/Component';
 
@@ -19,7 +20,9 @@ class CompactForumWidget extends Component {
 
     oncreate(vnode) {
         super.oncreate(vnode);
-        // Use native listener directly on the toggle button to avoid Mithril event delegation issues
+        const isFullWidth = this.attrs.layout === 'full-width';
+
+        // Toggle button click
         const toggle = this.element.querySelector('.CompactWidget-toggle');
         if (toggle) {
             this.toggleEl = toggle;
@@ -30,6 +33,22 @@ class CompactForumWidget extends Component {
             };
             toggle.addEventListener('click', this.boundToggleClick);
         }
+
+        // In desktop full-width layout, clicking anywhere on the bar toggles expansion
+        if (isFullWidth && this.attrs.viewport === 'desktop') {
+            const bar = this.element.querySelector('.CompactWidget-bar');
+            if (bar) {
+                this.barEl = bar;
+                this.boundBarClick = (e) => {
+                    if (this.toggleEl && this.toggleEl.contains(e.target)) return;
+                    e.stopPropagation();
+                    this.expanded = !this.expanded;
+                    m.redraw();
+                };
+                bar.addEventListener('click', this.boundBarClick);
+            }
+        }
+
         document.addEventListener('click', this.boundDocClick);
     }
 
@@ -37,6 +56,9 @@ class CompactForumWidget extends Component {
         super.onremove(vnode);
         if (this.toggleEl && this.boundToggleClick) {
             this.toggleEl.removeEventListener('click', this.boundToggleClick);
+        }
+        if (this.barEl && this.boundBarClick) {
+            this.barEl.removeEventListener('click', this.boundBarClick);
         }
         document.removeEventListener('click', this.boundDocClick);
     }
@@ -49,6 +71,7 @@ class CompactForumWidget extends Component {
     }
 
     view() {
+        const isFullWidth = this.attrs.layout === 'full-width';
         const canViewOnline = app.forum.attribute('canViewOnlineUsers');
         const users = canViewOnline ? (app.forum.onlineUsers() || []) : [];
         const totalOnline = canViewOnline ? (app.forum.attribute('totalOnlineUsers') || 0) : 0;
@@ -72,61 +95,73 @@ class CompactForumWidget extends Component {
         // Calculate overflow: visible users beyond the max that aren't shown as avatars
         const overflowCount = Math.max(0, totalOnline - users.length - hiddenOnline);
 
-        // Build stat items with aria-labels for screen readers
+        const viewport = this.attrs.viewport;
+        const isDesktopFullWidth = isFullWidth && viewport === 'desktop';
+
+        // Helper: build a stat item with icon, number, and contextual label/tooltip.
+        // - Desktop full-width: inline text label (lowercase, plural-aware), no tooltip
+        // - Classic sidebar / mobile: tooltip on hover/tap (capitalized, always plural), no inline label
+        const buildStat = (icon, value, tooltipKey, labelKey, extraClass) => {
+            const inlineLabel = app.translator.trans(labelKey, { count: value });
+            const tooltipText = app.translator.trans(tooltipKey);
+            const accessibleLabel = formatNumber(value) + ' ' + inlineLabel;
+            const statEl = m('span.CompactWidget-stat' + (extraClass || ''), {
+                'aria-label': accessibleLabel,
+                role: 'text',
+            }, [
+                m('i.fa-solid.' + icon, { 'aria-hidden': 'true' }),
+                m('span', formatNumber(value)),
+                isFullWidth ? m('span.CompactWidget-statLabel', inlineLabel) : null,
+            ]);
+            return isDesktopFullWidth ? statEl : m(Tooltip, { text: tooltipText }, statEl);
+        };
+
+        // Build stat items
         const stats = [];
+        const pre = 'ekumanov-forum-widgets.forum.stats.';
         if (discussionsCount != null) {
-            const label = app.translator.trans('ekumanov-forum-widgets.forum.stats.tooltip_discussions');
-            stats.push(m(Tooltip, { text: label },
-                m('span.CompactWidget-stat', { 'aria-label': formatNumber(discussionsCount) + ' ' + label, role: 'text' }, [
-                    m('i.fa-solid.fa-comments', { 'aria-hidden': 'true' }),
-                    m('span', formatNumber(discussionsCount)),
-                ])
-            ));
+            stats.push(buildStat('fa-comments', discussionsCount, pre + 'tooltip_discussions', pre + 'label_discussions'));
         }
         if (postsCount != null) {
-            const label = app.translator.trans('ekumanov-forum-widgets.forum.stats.tooltip_posts');
-            stats.push(m(Tooltip, { text: label },
-                m('span.CompactWidget-stat', { 'aria-label': formatNumber(postsCount) + ' ' + label, role: 'text' }, [
-                    m('i.fa-solid.fa-comment', { 'aria-hidden': 'true' }),
-                    m('span', formatNumber(postsCount)),
-                ])
-            ));
+            stats.push(buildStat('fa-comment', postsCount, pre + 'tooltip_posts', pre + 'label_posts'));
         }
         if (usersCount != null) {
-            const label = app.translator.trans('ekumanov-forum-widgets.forum.stats.tooltip_users');
-            stats.push(m(Tooltip, { text: label },
-                m('span.CompactWidget-stat', { 'aria-label': formatNumber(usersCount) + ' ' + label, role: 'text' }, [
-                    m('i.fa-solid.fa-user', { 'aria-hidden': 'true' }),
-                    m('span', formatNumber(usersCount)),
-                ])
-            ));
+            stats.push(buildStat('fa-user', usersCount, pre + 'tooltip_users', pre + 'label_users'));
         }
-        // Online users count — only shown when user has permission
         if (hasOnline) {
-            const label = app.translator.trans('ekumanov-forum-widgets.forum.stats.tooltip_online');
-            stats.push(m(Tooltip, { text: label },
-                m('span.CompactWidget-stat.CompactWidget-stat--online', { 'aria-label': formatNumber(totalOnline) + ' ' + label, role: 'text' }, [
-                    m('i.fa-solid.fa-user', { 'aria-hidden': 'true' }),
-                    m('span', formatNumber(totalOnline)),
-                ])
-            ));
+            stats.push(buildStat('fa-user', totalOnline, pre + 'tooltip_online', pre + 'label_online', '.CompactWidget-stat--online'));
         }
+
+        const isInToolbar = this.attrs.position === 'inside-toolbar';
+        const hasExpandableContent = canViewOnline || latestUser;
+        const classNames = [
+            this.expanded ? 'CompactWidget--expanded' : '',
+            isFullWidth ? 'CompactWidget--fullWidth' : '',
+            isInToolbar ? 'CompactWidget--inToolbar' : '',
+            viewport === 'desktop' ? 'CompactWidget--desktop' : '',
+            viewport === 'mobile' ? 'CompactWidget--mobile' : '',
+        ].filter(Boolean).join(' ');
 
         return m('section.CompactWidget', {
-            className: this.expanded ? 'CompactWidget--expanded' : '',
+            className: classNames,
             'aria-label': app.translator.trans('ekumanov-forum-widgets.forum.stats.title'),
         }, [
-            // Stats bar
-            m('.CompactWidget-bar', [
+            // Stats bar — clickable only in desktop full-width mode (JS listener in oncreate)
+            m('.CompactWidget-bar', {
+                role: isDesktopFullWidth && hasExpandableContent ? 'button' : undefined,
+                tabIndex: isDesktopFullWidth && hasExpandableContent ? '0' : undefined,
+                'aria-expanded': isDesktopFullWidth && hasExpandableContent ? String(this.expanded) : undefined,
+            }, [
                 m('.CompactWidget-stats', stats),
 
-                // Expand/collapse toggle
-                (canViewOnline || latestUser)
+                // Expand/collapse arrow indicator
+                hasExpandableContent
                     ? m('button.CompactWidget-toggle.Button.Button--icon.Button--link', {
                         'aria-label': this.expanded
                             ? app.translator.trans('ekumanov-forum-widgets.forum.aria.collapse_details')
                             : app.translator.trans('ekumanov-forum-widgets.forum.aria.expand_details'),
                         'aria-expanded': String(this.expanded),
+                        tabIndex: isDesktopFullWidth ? '-1' : '0',
                     }, m('i.fas', { className: this.expanded ? 'fa-chevron-up' : 'fa-chevron-down', 'aria-hidden': 'true' }))
                     : null,
             ]),
@@ -220,12 +255,38 @@ app.initializers.add('ekumanov/forum-widgets', () => {
     Forum.prototype.canViewOnlineUsers = Model.attribute('canViewOnlineUsers');
     Forum.prototype.latestRegisteredUser = Model.hasOne('latestRegisteredUser');
 
+    // Helper: read settings lazily (app.forum is not available at initializer time)
+    const getLayout = () => app.forum.attribute('forumStatsWidgetLayout') || 'classic';
+    const getDesktopPos = () => app.forum.attribute('forumStatsBarPositionDesktop') || 'below-toolbar';
+    const getMobilePos = () => app.forum.attribute('forumStatsBarPositionMobile') || 'below-toolbar';
+    const contentPriority = (pos) => pos === 'above-toolbar' ? 101 : 95;
+
+    // Desktop: classic sidebar layout
     extend(IndexSidebar.prototype, 'items', function (items) {
+        if (getLayout() !== 'classic') return;
         const routeName = app.current && app.current.get('routeName');
-        if (routeName !== 'index') {
-            return;
-        }
+        if (routeName !== 'index') return;
         const position = app.forum.attribute('forumStatsWidgetPosition') || -10;
-        items.add('compactForumWidget', m(CompactForumWidget), position);
+        items.add('compactForumWidget', m(CompactForumWidget, { layout: 'classic', viewport: 'desktop' }), position);
+    });
+
+    // Desktop: full-width inside toolbar
+    extend(IndexPage.prototype, 'toolbarItems', function (items) {
+        const routeName = app.current && app.current.get('routeName');
+        if (routeName !== 'index') return;
+        if (getLayout() !== 'classic' && getDesktopPos() === 'inside-toolbar') {
+            items.add('compactForumWidget', m(CompactForumWidget, { layout: 'full-width', position: 'inside-toolbar', viewport: 'desktop' }), 95);
+        }
+    });
+
+    // Desktop: full-width above/below toolbar + Mobile: above/below toolbar
+    extend(IndexPage.prototype, 'contentItems', function (items) {
+        const routeName = app.current && app.current.get('routeName');
+        if (routeName !== 'index') return;
+
+        if (getLayout() !== 'classic' && getDesktopPos() !== 'inside-toolbar') {
+            items.add('compactForumWidget', m(CompactForumWidget, { layout: 'full-width', viewport: 'desktop' }), contentPriority(getDesktopPos()));
+        }
+        items.add('compactForumWidgetMobile', m(CompactForumWidget, { layout: 'full-width', viewport: 'mobile' }), contentPriority(getMobilePos()));
     });
 });
