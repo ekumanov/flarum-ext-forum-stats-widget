@@ -237,6 +237,8 @@
     .CompactWidget {
         width: 100%;
         order: 100;
+        margin-top: 8px;
+        margin-bottom: 8px;
     }
 
     .CompactWidget-stats {
