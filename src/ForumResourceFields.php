@@ -63,6 +63,12 @@ class ForumResourceFields
             Schema\Str::make('forumStatsBarPositionMobile')
                 ->get(fn () => $this->settings->get('ekumanov-forum-widgets.bar_position_mobile', 'below-toolbar')),
 
+            Schema\Boolean::make('forumStatsShowToggle')
+                ->get(fn () => (bool) $this->settings->get('ekumanov-forum-widgets.show_toggle', true)),
+
+            Schema\Str::make('forumStatsExpandedPanelWidth')
+                ->get(fn () => $this->settings->get('ekumanov-forum-widgets.expanded_panel_width', 'full-bar')),
+
             // === Forum Statistics ===
 
             Schema\Integer::make('forumStatsDiscussionsCount')

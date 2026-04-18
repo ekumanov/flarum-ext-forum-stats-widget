@@ -46,6 +46,23 @@ app.initializers.add('ekumanov/forum-widgets', () => {
         label: app.translator.trans('ekumanov-forum-widgets.admin.settings.widget_position'),
         help: app.translator.trans('ekumanov-forum-widgets.admin.settings.widget_position_help'),
     });
+    reg.registerSetting({
+        setting: 'ekumanov-forum-widgets.show_toggle',
+        type: 'boolean',
+        label: app.translator.trans('ekumanov-forum-widgets.admin.settings.show_toggle'),
+        help: app.translator.trans('ekumanov-forum-widgets.admin.settings.show_toggle_help'),
+    });
+    reg.registerSetting({
+        setting: 'ekumanov-forum-widgets.expanded_panel_width',
+        type: 'select',
+        label: app.translator.trans('ekumanov-forum-widgets.admin.settings.expanded_panel_width'),
+        help: app.translator.trans('ekumanov-forum-widgets.admin.settings.expanded_panel_width_help'),
+        options: {
+            'full-bar': app.translator.trans('ekumanov-forum-widgets.admin.settings.expanded_panel_width_full_bar'),
+            'online-cell': app.translator.trans('ekumanov-forum-widgets.admin.settings.expanded_panel_width_online_cell'),
+        },
+        default: 'online-cell',
+    });
 
     // === Section: Online Users ===
     reg.registerSetting({
@@ -209,6 +226,12 @@ app.initializers.add('ekumanov/forum-widgets', () => {
 
             // Bar position (desktop) depends on full-width layout
             if (labelText.indexOf(barPositionDesktopLabel) > -1) {
+                group.classList.toggle('ekumanov-forum-widgets-disabled', settingValues.widgetLayout !== 'full-width');
+            }
+
+            // Expanded panel width depends on full-width layout
+            const expandedPanelWidthLabel = app.translator.trans('ekumanov-forum-widgets.admin.settings.expanded_panel_width').toString();
+            if (labelText.indexOf(expandedPanelWidthLabel) > -1) {
                 group.classList.toggle('ekumanov-forum-widgets-disabled', settingValues.widgetLayout !== 'full-width');
             }
         });

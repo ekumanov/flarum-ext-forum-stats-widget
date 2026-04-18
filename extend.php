@@ -32,7 +32,9 @@ return [
         ->default('ekumanov-forum-widgets.show_latest_registration', true)
         ->default('ekumanov-forum-widgets.stats_cache_duration', 600)
         ->default('ekumanov-forum-widgets.ignore_private_discussions', false)
-        ->default('ekumanov-forum-widgets.widget_position', -10),
+        ->default('ekumanov-forum-widgets.widget_position', -10)
+        ->default('ekumanov-forum-widgets.show_toggle', true)
+        ->default('ekumanov-forum-widgets.expanded_panel_width', 'online-cell'),
 
     (new Extend\ApiResource(ForumResource::class))
         ->fields(ForumResourceFields::class)

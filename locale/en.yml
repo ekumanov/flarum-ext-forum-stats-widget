@@ -64,6 +64,12 @@ ekumanov-forum-widgets:
       stats_cache_duration: Statistics cache duration (seconds)
       stats_cache_duration_help: "How long to cache discussion count, post count, total user count, and latest registration. The cache is automatically invalidated when discussions, posts, or users are created or deleted. Set to 0 to disable caching (not recommended for large forums)."
       ignore_private_discussions: Ignore private discussions in count
+      show_toggle: Show expand/collapse toggle button
+      show_toggle_help: "Whether to show the chevron button that expands/collapses the details panel. When disabled, the panel can still be opened by clicking the bar (full-bar mode) or the online users cell (online-cell mode)."
+      expanded_panel_width: Expanded panel width (desktop)
+      expanded_panel_width_help: "Full bar: panel spans the full bar width, clicking anywhere on bar expands. Online cell: panel appears below the online users count only, clicking the online users cell expands."
+      expanded_panel_width_full_bar: Full bar width
+      expanded_panel_width_online_cell: Online users cell only
     permissions:
       view_online_users: View online users
       view_discussions_count: View discussions count

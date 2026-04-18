@@ -17,7 +17,7 @@
     display: flex;
     align-items: center;
     padding: 5px 8px;
-    border-radius: 6px;
+    border-radius: 4px;
     background: var(--control-bg, rgba(0, 0, 0, 0.04));
     border: 1px solid var(--control-bg, rgba(0, 0, 0, 0.06));
     min-height: 28px;
@@ -33,12 +33,13 @@
     min-width: 0;
 }
 
-/* Full-width layout: single row, clickable bar */
+/* Full-width layout: single row, equal columns */
 .CompactWidget--fullWidth .CompactWidget-stats {
     grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
 }
 
-.CompactWidget--fullWidth.CompactWidget--desktop .CompactWidget-bar {
+/* Full-bar mode: entire bar is clickable */
+.CompactWidget--fullBar .CompactWidget-bar {
     cursor: pointer;
 }
 
@@ -47,6 +48,7 @@
 .CompactWidget-stat {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 3px;
     font-size: 11px;
     color: var(--muted-more-color, #999);
@@ -70,6 +72,30 @@
 .CompactWidget-stat--online i {
     color: #4CAF50;
     opacity: 1;
+}
+
+/* Full-bar mode: whole bar is clickable */
+.CompactWidget--fullBar .CompactWidget-stat {
+    cursor: pointer;
+}
+
+/* Clickable online wrapper (desktop online-cell mode, mobile) — whole cell is the hit target */
+.CompactWidget-onlineWrapper[role="button"] {
+    cursor: pointer;
+}
+.CompactWidget-onlineWrapper[role="button"] .CompactWidget-stat {
+    cursor: pointer;
+}
+
+/* --- Online cell wrapper (inline toggle on mobile + online-cell desktop) --- */
+
+.CompactWidget-onlineWrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    min-width: 0;
+    position: relative;
 }
 
 /* Inside-toolbar variant: match the height of the toolbar dropdown button */
@@ -125,10 +151,21 @@
     background: var(--body-bg, #fff);
     border: 1px solid var(--control-bg, rgba(0, 0, 0, 0.1));
     border-top: none;
-    border-radius: 0 0 6px 6px;
+    border-radius: 0 0 var(--border-radius, 4px) var(--border-radius, 4px);
     padding: 8px 10px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 2px 6px var(--shadow-color, rgba(0, 0, 0, 0.15));
     animation: compactWidgetSlideDown 0.15s ease-out;
+}
+
+/* Online-cell mode: panel anchored to and sized by the online wrapper.
+   max-width caps the panel so a very long username truncates via ellipsis
+   inside its row instead of expanding the panel past the bar / viewport. */
+.CompactWidget-onlineWrapper .CompactWidget-expanded {
+    right: auto;
+    border-top: 1px solid var(--control-bg, rgba(0, 0, 0, 0.1));
+    border-radius: var(--border-radius, 4px);
+    min-width: 200px;
+    max-width: min(360px, calc(100vw - 20px));
 }
 
 @keyframes compactWidgetSlideDown {
@@ -292,10 +329,6 @@
 
     .CompactWidget-stats {
         grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
-    }
-
-    .CompactWidget-stat {
-        justify-content: center;
     }
 }
 
