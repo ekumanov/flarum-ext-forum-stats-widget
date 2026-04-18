@@ -11,21 +11,42 @@ import IndexPage from 'flarum/forum/components/IndexPage';
 import IndexSidebar from 'flarum/forum/components/IndexSidebar';
 import Component from 'flarum/common/Component';
 
+// Shared promise so stacked widgets (desktop + mobile) coalesce into one fetch.
+let inflightRefresh = null;
+function refreshForumData() {
+    if (inflightRefresh) return inflightRefresh;
+    // Flarum 2.0's ForumResource is a singleton keyed at /api/forums (no /:id),
+    // so we call the 2-arg form of Store.find — passing an id would hit /api/forums/1 and 404.
+    inflightRefresh = app.store
+        .find('forums', { include: 'onlineUsers,latestRegisteredUser' })
+        .catch(() => {})
+        .then(() => {
+            inflightRefresh = null;
+            m.redraw();
+        });
+    return inflightRefresh;
+}
+
 class CompactForumWidget extends Component {
     oninit(vnode) {
         super.oninit(vnode);
         this.expanded = false;
         this.boundDocClick = this.onDocumentClick.bind(this);
+        this.boundVisChange = () => {
+            if (document.visibilityState === 'visible') refreshForumData();
+        };
     }
 
     oncreate(vnode) {
         super.oncreate(vnode);
         document.addEventListener('click', this.boundDocClick);
+        document.addEventListener('visibilitychange', this.boundVisChange);
     }
 
     onremove(vnode) {
         super.onremove(vnode);
         document.removeEventListener('click', this.boundDocClick);
+        document.removeEventListener('visibilitychange', this.boundVisChange);
     }
 
     onDocumentClick(e) {
@@ -317,5 +338,12 @@ app.initializers.add('ekumanov/forum-widgets', () => {
             items.add('compactForumWidget', m(CompactForumWidget, { layout: 'full-width', viewport: 'desktop' }), contentPriority(getDesktopPos()));
         }
         items.add('compactForumWidgetMobile', m(CompactForumWidget, { layout: 'full-width', viewport: 'mobile' }), contentPriority(getMobilePos()));
+    });
+
+    // Refresh widget data when returning to the index via SPA navigation.
+    // `app.previous?.type` is falsy on the very first page load (initial bootstrap
+    // already hydrated the forum resource), so this only fires on re-entry.
+    extend(IndexPage.prototype, 'oninit', function () {
+        if (app.previous?.type) refreshForumData();
     });
 });
