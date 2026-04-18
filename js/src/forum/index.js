@@ -15,8 +15,10 @@ import Component from 'flarum/common/Component';
 let inflightRefresh = null;
 function refreshForumData() {
     if (inflightRefresh) return inflightRefresh;
+    // Flarum 2.0's ForumResource is a singleton keyed at /api/forums (no /:id),
+    // so we call the 2-arg form of Store.find — passing an id would hit /api/forums/1 and 404.
     inflightRefresh = app.store
-        .find('forums', '1', { include: 'onlineUsers,latestRegisteredUser' })
+        .find('forums', { include: 'onlineUsers,latestRegisteredUser' })
         .catch(() => {})
         .then(() => {
             inflightRefresh = null;
