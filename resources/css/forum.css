@@ -157,12 +157,15 @@
     animation: compactWidgetSlideDown 0.15s ease-out;
 }
 
-/* Online-cell mode: panel anchored to and sized by the online wrapper */
+/* Online-cell mode: panel anchored to and sized by the online wrapper.
+   max-width caps the panel so a very long username truncates via ellipsis
+   inside its row instead of expanding the panel past the bar / viewport. */
 .CompactWidget-onlineWrapper .CompactWidget-expanded {
     right: auto;
     border-top: 1px solid var(--control-bg, rgba(0, 0, 0, 0.1));
     border-radius: var(--border-radius, 4px);
     min-width: 200px;
+    max-width: min(360px, calc(100vw - 20px));
 }
 
 @keyframes compactWidgetSlideDown {
