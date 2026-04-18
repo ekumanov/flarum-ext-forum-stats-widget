@@ -119,6 +119,12 @@
     padding: 9px 13px;
 }
 
+/* Merged online/total stat on mobile inside-toolbar: force cursor to match the
+   wrapper's role=button, and keep the "N/M" tight next to the icon. */
+.CompactWidget-stat--merged {
+    cursor: pointer;
+}
+
 /* Text labels (full-width desktop only) */
 .CompactWidget-statLabel {
     display: none;
