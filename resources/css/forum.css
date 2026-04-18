@@ -107,6 +107,17 @@
     margin-bottom: 16px;
 }
 
+/* Desktop above-footer: balloon-style — don't span the full viewport width,
+   constrain to a compact centered pill so it reads as a summary chip rather
+   than an end-of-page bar. Mobile keeps full width for tappability. */
+@media (min-width: 768px) {
+    .CompactWidget--aboveFooter.CompactWidget--desktop {
+        max-width: 420px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+}
+
 /* Inside-toolbar variant: match the height of the toolbar dropdown button */
 .CompactWidget--inToolbar {
     flex: 1;

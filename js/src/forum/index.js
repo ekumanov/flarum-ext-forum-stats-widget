@@ -156,7 +156,7 @@ class CompactForumWidget extends Component {
         // Toggle button (shared between inline and bar-end placements)
         const toggleButton = hasExpandableContent && showToggle
             ? m('button.CompactWidget-toggle.Button.Button--icon.Button--link', {
-                onclick: (e) => { e.stopPropagation(); this.expanded = !this.expanded; m.redraw(); },
+                onclick: (e) => { e.stopPropagation(); this.expanded = !this.expanded; m.redraw.sync(); },
                 'aria-label': this.expanded
                     ? app.translator.trans('ekumanov-forum-widgets.forum.aria.collapse_details')
                     : app.translator.trans('ekumanov-forum-widgets.forum.aria.expand_details'),
@@ -267,8 +267,8 @@ class CompactForumWidget extends Component {
             // pixel on this already-cramped mobile toolbar row. Tapping the cell still
             // opens the panel, so losing the chevron has no functional impact.
             stats.push(m('.CompactWidget-onlineWrapper', {
-                onclick: (e) => { e.stopPropagation(); this.expanded = !this.expanded; m.redraw(); },
-                onkeydown: (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this.expanded = !this.expanded; m.redraw(); } },
+                onclick: (e) => { e.stopPropagation(); this.expanded = !this.expanded; m.redraw.sync(); },
+                onkeydown: (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this.expanded = !this.expanded; m.redraw.sync(); } },
                 role: 'button',
                 tabIndex: '0',
                 'aria-expanded': String(this.expanded),
@@ -287,8 +287,8 @@ class CompactForumWidget extends Component {
 
             if (onlineCellClickable) {
                 stats.push(m('.CompactWidget-onlineWrapper', {
-                    onclick: (e) => { e.stopPropagation(); this.expanded = !this.expanded; m.redraw(); },
-                    onkeydown: (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this.expanded = !this.expanded; m.redraw(); } },
+                    onclick: (e) => { e.stopPropagation(); this.expanded = !this.expanded; m.redraw.sync(); },
+                    onkeydown: (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this.expanded = !this.expanded; m.redraw.sync(); } },
                     role: 'button',
                     tabIndex: '0',
                     'aria-expanded': String(this.expanded),
@@ -327,10 +327,10 @@ class CompactForumWidget extends Component {
         }, [
             m('.CompactWidget-bar', {
                 onclick: barClickable
-                    ? (e) => { e.stopPropagation(); this.expanded = !this.expanded; m.redraw(); }
+                    ? (e) => { e.stopPropagation(); this.expanded = !this.expanded; m.redraw.sync(); }
                     : undefined,
                 onkeydown: barClickable
-                    ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this.expanded = !this.expanded; m.redraw(); } }
+                    ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this.expanded = !this.expanded; m.redraw.sync(); } }
                     : undefined,
                 role: barClickable ? 'button' : undefined,
                 tabIndex: barClickable ? '0' : undefined,
