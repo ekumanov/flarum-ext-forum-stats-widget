@@ -332,9 +332,9 @@
     }
 }
 
-/* Mobile & tablet landscape — hide the widget entirely */
-@media (max-width: 991px) and (orientation: landscape) {
-    .CompactWidget {
-        display: none !important;
-    }
-}
+/* Landscape on small devices no longer hides the widget outright —
+   the 768px breakpoint already picks the right variant (mobile bar below/above
+   toolbar, or desktop bar in its configured position). Removing the former
+   blanket hide means an iPhone in landscape (≥768px CSS width → desktop layout)
+   now shows the desktop bar inside the toolbar between the "Latest" dropdown
+   and the mark-all-read button, as configured. */
