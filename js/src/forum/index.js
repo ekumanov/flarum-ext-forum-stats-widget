@@ -326,7 +326,14 @@ app.initializers.add('ekumanov/forum-widgets', () => {
     const getLayout = () => app.forum.attribute('forumStatsWidgetLayout') || 'full-width';
     const getDesktopPos = () => app.forum.attribute('forumStatsBarPositionDesktop') || 'inside-toolbar';
     const getMobilePos = () => app.forum.attribute('forumStatsBarPositionMobile') || 'above-toolbar';
-    const contentPriority = (pos) => pos === 'above-toolbar' ? 101 : 95;
+    // contentItems priorities: Flarum renders higher priority earlier. Toolbar is ~100 and the
+    // discussion list is below that. -1000 drops the widget to the end of IndexPage content,
+    // rendering it directly above the site footer.
+    const contentPriority = (pos) => {
+        if (pos === 'above-toolbar') return 101;
+        if (pos === 'above-footer') return -1000;
+        return 95; // below-toolbar
+    };
 
     // Desktop: classic sidebar layout
     extend(IndexSidebar.prototype, 'items', function (items) {
