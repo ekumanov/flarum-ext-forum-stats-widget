@@ -39,6 +39,7 @@ ekumanov-forum-widgets:
       bar_position_above: Above the toolbar
       bar_position_inside: Inside the toolbar
       bar_position_below: Below the toolbar
+      bar_position_above_footer: Above the footer
       widget_position: Widget sidebar position (priority)
       widget_position_help: "Controls where the widget appears in the sidebar. Lower (more negative) values place it further down. Default: -10. Only applies to the sidebar layout."
 

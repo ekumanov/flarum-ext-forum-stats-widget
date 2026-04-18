@@ -26,6 +26,7 @@ app.initializers.add('ekumanov/forum-widgets', () => {
             'above-toolbar': app.translator.trans('ekumanov-forum-widgets.admin.settings.bar_position_above'),
             'inside-toolbar': app.translator.trans('ekumanov-forum-widgets.admin.settings.bar_position_inside'),
             'below-toolbar': app.translator.trans('ekumanov-forum-widgets.admin.settings.bar_position_below'),
+            'above-footer': app.translator.trans('ekumanov-forum-widgets.admin.settings.bar_position_above_footer'),
         },
         default: 'inside-toolbar',
     });
@@ -37,6 +38,7 @@ app.initializers.add('ekumanov/forum-widgets', () => {
         options: {
             'above-toolbar': app.translator.trans('ekumanov-forum-widgets.admin.settings.bar_position_above'),
             'below-toolbar': app.translator.trans('ekumanov-forum-widgets.admin.settings.bar_position_below'),
+            'above-footer': app.translator.trans('ekumanov-forum-widgets.admin.settings.bar_position_above_footer'),
         },
         default: 'above-toolbar',
     });
