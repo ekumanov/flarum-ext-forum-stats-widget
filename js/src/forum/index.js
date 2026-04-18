@@ -13,7 +13,24 @@ import Component from 'flarum/common/Component';
 
 // Shared promise so stacked widgets (desktop + mobile) coalesce into one fetch.
 let inflightRefresh = null;
+
+// Cheap check: does the current actor have any visible widget data on the forum resource?
+// Permission/visibility gating happens server-side (ForumResourceFields), so if none of these
+// attributes were serialized on initial load, the actor has no reason to refetch. Skipping
+// saves a round-trip for guests who've been denied all widget fields.
+function hasVisibleWidgetData() {
+    const f = app.forum;
+    if (!f) return false;
+    if (f.attribute('canViewOnlineUsers')) return true;
+    if (f.attribute('forumStatsDiscussionsCount') != null) return true;
+    if (f.attribute('forumStatsPostsCount') != null) return true;
+    if (f.attribute('forumStatsUsersCount') != null) return true;
+    try { if (f.latestRegisteredUser()) return true; } catch (e) {}
+    return false;
+}
+
 function refreshForumData() {
+    if (!hasVisibleWidgetData()) return Promise.resolve();
     if (inflightRefresh) return inflightRefresh;
     // Flarum 2.0's ForumResource is a singleton keyed at /api/forums (no /:id),
     // so we call the 2-arg form of Store.find — passing an id would hit /api/forums/1 and 404.
