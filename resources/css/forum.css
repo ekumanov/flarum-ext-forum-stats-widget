@@ -99,8 +99,10 @@
 }
 
 /* Above-footer variant: add breathing room above (separates from "Load more"
-   discussion button) and below (separates from the site footer). */
-.CompactWidget--aboveFooter {
+   discussion button) and below (separates from the site footer). Uses a
+   double-class selector so it beats the mobile @media rule further down
+   that resets .CompactWidget margins. */
+.CompactWidget.CompactWidget--aboveFooter {
     margin-top: 20px;
     margin-bottom: 16px;
 }
