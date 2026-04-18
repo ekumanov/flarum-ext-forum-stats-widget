@@ -263,6 +263,9 @@ class CompactForumWidget extends Component {
                 m('i.fa-solid.fa-user', { 'aria-hidden': 'true' }),
                 m('span', mergedValue),
             ]);
+            // Skip the chevron entirely when merged — the "N/M" number pair needs every
+            // pixel on this already-cramped mobile toolbar row. Tapping the cell still
+            // opens the panel, so losing the chevron has no functional impact.
             stats.push(m('.CompactWidget-onlineWrapper', {
                 onclick: (e) => { e.stopPropagation(); this.expanded = !this.expanded; m.redraw(); },
                 onkeydown: (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this.expanded = !this.expanded; m.redraw(); } },
@@ -271,7 +274,6 @@ class CompactForumWidget extends Component {
                 'aria-expanded': String(this.expanded),
             }, [
                 mergedStat,
-                inlineToggle ? toggleButton : null,
             ]));
         } else if (hasOnline) {
             // Online cell is clickable in classic sidebar, mobile, and desktop online-cell modes —
