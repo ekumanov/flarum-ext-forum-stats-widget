@@ -119,6 +119,12 @@
     padding: 9px 13px;
 }
 
+/* Merged online/total stat on mobile inside-toolbar: force cursor to match the
+   wrapper's role=button, and keep the "N/M" tight next to the icon. */
+.CompactWidget-stat--merged {
+    cursor: pointer;
+}
+
 /* Text labels (full-width desktop only) */
 .CompactWidget-statLabel {
     display: none;
@@ -329,11 +335,21 @@
 
 /* Mobile portrait */
 @media (max-width: 767px) {
-    .CompactWidget {
+    /* For contentItems placements (above/below toolbar, above footer): take full
+       row width and sit below the toolbar via flex order. Skip this for the
+       inside-toolbar variant — there the widget must stay in its natural flex
+       slot between "Latest" and the mark-all-read button. */
+    .CompactWidget:not(.CompactWidget--inToolbar) {
         width: 100%;
         order: 100;
         margin-top: 4px;
         margin-bottom: 8px;
+    }
+
+    /* Inside-toolbar mobile: align vertically with the sibling toolbar buttons
+       (both 36–38px tall) and don't grow beyond their row. */
+    .CompactWidget--inToolbar.CompactWidget--mobile {
+        margin: 0;
     }
 
     .CompactWidget-stats {

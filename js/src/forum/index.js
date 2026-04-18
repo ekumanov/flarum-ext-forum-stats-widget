@@ -5,6 +5,7 @@ import Model from 'flarum/common/Model';
 import Avatar from 'flarum/common/components/Avatar';
 import username from 'flarum/common/helpers/username';
 import formatNumber from 'flarum/common/utils/formatNumber';
+import extractText from 'flarum/common/utils/extractText';
 import Link from 'flarum/common/components/Link';
 import Tooltip from 'flarum/common/components/Tooltip';
 import IndexPage from 'flarum/forum/components/IndexPage';
@@ -241,10 +242,40 @@ class CompactForumWidget extends Component {
         // Build stats in order: online (1), users (2), discussions (3), posts (4)
         const stats = [];
 
+        // Merge online + users into a single "N/M" cell on mobile inside-toolbar mode,
+        // where horizontal space is tight (Latest dropdown + Mark-all-read button share the row).
+        // Shows online icon + "online/total", click opens the expanded panel.
+        const mergeOnlineUsers = isMobile && isInToolbar && hasOnline && usersCount != null;
+
         // Online users — first. Whenever clicking the online cell should open the panel
         // (everywhere except desktop full-bar mode, where the whole bar is the click target),
         // we wrap the stat in an interactive `.CompactWidget-onlineWrapper` div.
-        if (hasOnline) {
+        if (mergeOnlineUsers) {
+            const mergedValue = formatNumber(totalOnline) + '/' + formatNumber(usersCount);
+            const accessibleLabel = extractText(app.translator.trans('ekumanov-forum-widgets.forum.stats.label_online_over_total', {
+                online: totalOnline,
+                total: usersCount,
+            }));
+            const mergedStat = m('span.CompactWidget-stat.CompactWidget-stat--online.CompactWidget-stat--merged', {
+                'aria-label': accessibleLabel,
+                role: 'text',
+            }, [
+                m('i.fa-solid.fa-user', { 'aria-hidden': 'true' }),
+                m('span', mergedValue),
+            ]);
+            // Skip the chevron entirely when merged — the "N/M" number pair needs every
+            // pixel on this already-cramped mobile toolbar row. Tapping the cell still
+            // opens the panel, so losing the chevron has no functional impact.
+            stats.push(m('.CompactWidget-onlineWrapper', {
+                onclick: (e) => { e.stopPropagation(); this.expanded = !this.expanded; m.redraw(); },
+                onkeydown: (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this.expanded = !this.expanded; m.redraw(); } },
+                role: 'button',
+                tabIndex: '0',
+                'aria-expanded': String(this.expanded),
+            }, [
+                mergedStat,
+            ]));
+        } else if (hasOnline) {
             // Online cell is clickable in classic sidebar, mobile, and desktop online-cell modes —
             // anywhere except desktop full-bar, which handles clicks on the entire bar.
             const onlineCellClickable = hasExpandableContent && !(isDesktopFullWidth && !isOnlineCellMode);
@@ -274,8 +305,8 @@ class CompactForumWidget extends Component {
             }
         }
 
-        // Users count — second.
-        if (usersCount != null) {
+        // Users count — second. Skipped when merged with online above.
+        if (usersCount != null && !mergeOnlineUsers) {
             stats.push(buildStat('fa-user', usersCount, pre + 'tooltip_users', pre + 'label_users', ''));
         }
         // Discussions count — third
@@ -346,16 +377,19 @@ app.initializers.add('ekumanov/forum-widgets', () => {
         items.add('compactForumWidget', m(CompactForumWidget, { layout: 'classic', viewport: 'desktop' }), position);
     });
 
-    // Desktop: full-width inside toolbar
+    // Inside-toolbar placements (desktop full-width + mobile)
     extend(IndexPage.prototype, 'toolbarItems', function (items) {
         const routeName = app.current && app.current.get('routeName');
         if (routeName !== 'index') return;
         if (getLayout() !== 'classic' && getDesktopPos() === 'inside-toolbar') {
             items.add('compactForumWidget', m(CompactForumWidget, { layout: 'full-width', position: 'inside-toolbar', viewport: 'desktop' }), 95);
         }
+        if (getMobilePos() === 'inside-toolbar') {
+            items.add('compactForumWidgetMobile', m(CompactForumWidget, { layout: 'full-width', position: 'inside-toolbar', viewport: 'mobile' }), 95);
+        }
     });
 
-    // Desktop: full-width above/below toolbar + Mobile: above/below toolbar
+    // Desktop full-width above/below/footer + Mobile above/below/footer (not inside-toolbar).
     extend(IndexPage.prototype, 'contentItems', function (items) {
         const routeName = app.current && app.current.get('routeName');
         if (routeName !== 'index') return;
@@ -363,7 +397,9 @@ app.initializers.add('ekumanov/forum-widgets', () => {
         if (getLayout() !== 'classic' && getDesktopPos() !== 'inside-toolbar') {
             items.add('compactForumWidget', m(CompactForumWidget, { layout: 'full-width', viewport: 'desktop', position: getDesktopPos() }), contentPriority(getDesktopPos()));
         }
-        items.add('compactForumWidgetMobile', m(CompactForumWidget, { layout: 'full-width', viewport: 'mobile', position: getMobilePos() }), contentPriority(getMobilePos()));
+        if (getMobilePos() !== 'inside-toolbar') {
+            items.add('compactForumWidgetMobile', m(CompactForumWidget, { layout: 'full-width', viewport: 'mobile', position: getMobilePos() }), contentPriority(getMobilePos()));
+        }
     });
 
     // Refresh widget data when returning to the index via SPA navigation.
