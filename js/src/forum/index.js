@@ -5,6 +5,7 @@ import Model from 'flarum/common/Model';
 import Avatar from 'flarum/common/components/Avatar';
 import username from 'flarum/common/helpers/username';
 import formatNumber from 'flarum/common/utils/formatNumber';
+import extractText from 'flarum/common/utils/extractText';
 import Link from 'flarum/common/components/Link';
 import Tooltip from 'flarum/common/components/Tooltip';
 import IndexPage from 'flarum/forum/components/IndexPage';
@@ -251,10 +252,10 @@ class CompactForumWidget extends Component {
         // we wrap the stat in an interactive `.CompactWidget-onlineWrapper` div.
         if (mergeOnlineUsers) {
             const mergedValue = formatNumber(totalOnline) + '/' + formatNumber(usersCount);
-            const accessibleLabel = app.translator.trans('ekumanov-forum-widgets.forum.stats.label_online_over_total', {
+            const accessibleLabel = extractText(app.translator.trans('ekumanov-forum-widgets.forum.stats.label_online_over_total', {
                 online: totalOnline,
                 total: usersCount,
-            });
+            }));
             const mergedStat = m('span.CompactWidget-stat.CompactWidget-stat--online.CompactWidget-stat--merged', {
                 'aria-label': accessibleLabel,
                 role: 'text',
