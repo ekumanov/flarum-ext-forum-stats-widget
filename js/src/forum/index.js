@@ -92,13 +92,15 @@ class CompactForumWidget extends Component {
         const pre = 'ekumanov-forum-widgets.forum.stats.';
 
         // buildStat: creates a stat element with optional tooltip.
-        // forceTooltip: use tooltip even in full-width desktop mode (for non-online stats in online-cell mode).
-        // noTooltip: skip the tooltip entirely (e.g. online stat on mobile, where tapping the cell expands the panel).
-        const buildStat = (icon, value, tooltipKey, labelKey, extraClass, forceTooltip, noTooltip) => {
+        // Tooltips are shown on classic-sidebar desktop and mobile; never in full-width desktop
+        // (which has inline labels or tappable cells instead).
+        // noTooltip: suppress the tooltip explicitly (e.g. online stat on mobile, where tapping
+        // the cell expands the panel and a tooltip would flicker on touch).
+        const buildStat = (icon, value, tooltipKey, labelKey, extraClass, noTooltip) => {
             const inlineLabel = app.translator.trans(labelKey, { count: value });
             const tooltipText = app.translator.trans(tooltipKey);
             const accessibleLabel = formatNumber(value) + ' ' + inlineLabel;
-            const useTooltip = !noTooltip && (!isDesktopFullWidth || forceTooltip);
+            const useTooltip = !noTooltip && !isDesktopFullWidth;
             const statEl = m('span.CompactWidget-stat' + (extraClass || ''), {
                 'aria-label': accessibleLabel,
                 role: 'text',
@@ -199,32 +201,31 @@ class CompactForumWidget extends Component {
         // Build stats in order: online (1), users (2), discussions (3), posts (4)
         const stats = [];
 
-        // Online users — first. On mobile and desktop online-cell mode, wraps the toggle
-        // and (in online-cell mode) also the expanded panel.
+        // Online users — first. Whenever clicking the online cell should open the panel
+        // (everywhere except desktop full-bar mode, where the whole bar is the click target),
+        // we wrap the stat in an interactive `.CompactWidget-onlineWrapper` div.
         if (hasOnline) {
-            // Skip the tooltip on the online stat when it lives inside a tappable wrapper
-            // (mobile, or desktop online-cell) — tapping the cell expands the panel instead.
+            // Online cell is clickable in classic sidebar, mobile, and desktop online-cell modes —
+            // anywhere except desktop full-bar, which handles clicks on the entire bar.
+            const onlineCellClickable = hasExpandableContent && !(isDesktopFullWidth && !isOnlineCellMode);
+            // Skip the tooltip when the cell IS the primary click target in a layout without
+            // inline labels or a hovered bar (mobile + desktop online-cell). Classic keeps the
+            // tooltip because icons there have no visible label.
             const noOnlineTooltip = inlineToggle;
-            const onlineStat = buildStat('fa-user', totalOnline, pre + 'tooltip_online', pre + 'label_online', '.CompactWidget-stat--online', false, noOnlineTooltip);
+            const onlineStat = buildStat('fa-user', totalOnline, pre + 'tooltip_online', pre + 'label_online', '.CompactWidget-stat--online', noOnlineTooltip);
 
-            if (inlineToggle) {
-                // Online cell wrapper: holds the stat + toggle side by side.
-                // Clickable on mobile (always, if expandable) and desktop online-cell mode —
-                // anywhere inside the wrapper toggles the panel, regardless of the chevron.
-                const cellClickable = (isMobile || (isDesktopFullWidth && isOnlineCellMode)) && hasExpandableContent;
+            if (onlineCellClickable) {
                 stats.push(m('.CompactWidget-onlineWrapper', {
-                    onclick: cellClickable
-                        ? (e) => { e.stopPropagation(); this.expanded = !this.expanded; m.redraw(); }
-                        : undefined,
-                    onkeydown: cellClickable
-                        ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this.expanded = !this.expanded; m.redraw(); } }
-                        : undefined,
-                    role: cellClickable ? 'button' : undefined,
-                    tabIndex: cellClickable ? '0' : undefined,
-                    'aria-expanded': cellClickable ? String(this.expanded) : undefined,
+                    onclick: (e) => { e.stopPropagation(); this.expanded = !this.expanded; m.redraw(); },
+                    onkeydown: (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this.expanded = !this.expanded; m.redraw(); } },
+                    role: 'button',
+                    tabIndex: '0',
+                    'aria-expanded': String(this.expanded),
                 }, [
                     onlineStat,
-                    toggleButton,
+                    // Chevron goes inside the wrapper only when `inlineToggle` (mobile or
+                    // desktop online-cell). Classic keeps the chevron at bar-end.
+                    inlineToggle ? toggleButton : null,
                     // Panel inside wrapper only in desktop online-cell mode
                     isDesktopFullWidth && isOnlineCellMode ? expandedPanel : null,
                 ]));
@@ -233,17 +234,17 @@ class CompactForumWidget extends Component {
             }
         }
 
-        // Users count — second. In online-cell mode, other stats get a tooltip.
+        // Users count — second.
         if (usersCount != null) {
-            stats.push(buildStat('fa-user', usersCount, pre + 'tooltip_users', pre + 'label_users', '', isOnlineCellMode));
+            stats.push(buildStat('fa-user', usersCount, pre + 'tooltip_users', pre + 'label_users', ''));
         }
         // Discussions count — third
         if (discussionsCount != null) {
-            stats.push(buildStat('fa-comments', discussionsCount, pre + 'tooltip_discussions', pre + 'label_discussions', '', isOnlineCellMode));
+            stats.push(buildStat('fa-comments', discussionsCount, pre + 'tooltip_discussions', pre + 'label_discussions', ''));
         }
         // Posts count — fourth
         if (postsCount != null) {
-            stats.push(buildStat('fa-comment', postsCount, pre + 'tooltip_posts', pre + 'label_posts', '', isOnlineCellMode));
+            stats.push(buildStat('fa-comment', postsCount, pre + 'tooltip_posts', pre + 'label_posts', ''));
         }
 
         // Bar is clickable in full-bar desktop mode only

@@ -67,7 +67,7 @@ ekumanov-forum-widgets:
       show_toggle: Show expand/collapse toggle button
       show_toggle_help: "Whether to show the chevron button that expands/collapses the details panel. When disabled, the panel can still be opened by clicking the bar (full-bar mode) or the online users cell (online-cell mode)."
       expanded_panel_width: Expanded panel width (desktop)
-      expanded_panel_width_help: "Full bar: panel spans the full bar width, stats centered, clicking anywhere on bar expands. Online cell: panel appears below the online users count only, clicking the online users cell expands."
+      expanded_panel_width_help: "Full bar: panel spans the full bar width, clicking anywhere on bar expands. Online cell: panel appears below the online users count only, clicking the online users cell expands."
       expanded_panel_width_full_bar: Full bar width
       expanded_panel_width_online_cell: Online users cell only
     permissions:

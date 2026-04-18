@@ -61,7 +61,7 @@ app.initializers.add('ekumanov/forum-widgets', () => {
             'full-bar': app.translator.trans('ekumanov-forum-widgets.admin.settings.expanded_panel_width_full_bar'),
             'online-cell': app.translator.trans('ekumanov-forum-widgets.admin.settings.expanded_panel_width_online_cell'),
         },
-        default: 'full-bar',
+        default: 'online-cell',
     });
 
     // === Section: Online Users ===
