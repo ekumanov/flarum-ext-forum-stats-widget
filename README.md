@@ -99,6 +99,14 @@ php flarum migrate
 php flarum cache:clear
 ```
 
+Then hard-refresh the forum in your browser (Cmd+Shift+R on macOS, Ctrl+Shift+R on Windows/Linux) so it picks up the new CSS/JS.
+
+If the new version still doesn't appear:
+
+- Confirm the new version is installed: `composer show ekumanov/flarum-ext-forum-widgets | grep versions`
+- Check the served cache-buster hash changed: `curl -s https://your-forum/ | grep -oE 'forum\.css\?v=[a-f0-9]+'` — the hash should differ from before the update.
+- If you're behind a CDN (e.g. Cloudflare) and the hash changed but you still see old bytes, purge that URL in your CDN.
+
 ## Links
 
 - [Packagist](https://packagist.org/packages/ekumanov/flarum-ext-forum-widgets)
