@@ -48,6 +48,7 @@
 .CompactWidget-stat {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 3px;
     font-size: 11px;
     color: var(--muted-more-color, #999);
@@ -73,9 +74,8 @@
     opacity: 1;
 }
 
-/* Full-bar mode: stats centered and pointer (whole bar is clickable) */
+/* Full-bar mode: whole bar is clickable */
 .CompactWidget--fullBar .CompactWidget-stat {
-    justify-content: center;
     cursor: pointer;
 }
 
@@ -325,10 +325,6 @@
 
     .CompactWidget-stats {
         grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
-    }
-
-    .CompactWidget-stat {
-        justify-content: center;
     }
 
     /* On mobile the online wrapper is a grid cell like other stats */
