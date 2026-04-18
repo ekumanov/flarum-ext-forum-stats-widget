@@ -93,11 +93,12 @@ class CompactForumWidget extends Component {
 
         // buildStat: creates a stat element with optional tooltip.
         // forceTooltip: use tooltip even in full-width desktop mode (for non-online stats in online-cell mode).
-        const buildStat = (icon, value, tooltipKey, labelKey, extraClass, forceTooltip) => {
+        // noTooltip: skip the tooltip entirely (e.g. online stat on mobile, where tapping the cell expands the panel).
+        const buildStat = (icon, value, tooltipKey, labelKey, extraClass, forceTooltip, noTooltip) => {
             const inlineLabel = app.translator.trans(labelKey, { count: value });
             const tooltipText = app.translator.trans(tooltipKey);
             const accessibleLabel = formatNumber(value) + ' ' + inlineLabel;
-            const useTooltip = !isDesktopFullWidth || forceTooltip;
+            const useTooltip = !noTooltip && (!isDesktopFullWidth || forceTooltip);
             const statEl = m('span.CompactWidget-stat' + (extraClass || ''), {
                 'aria-label': accessibleLabel,
                 role: 'text',
@@ -201,12 +202,16 @@ class CompactForumWidget extends Component {
         // Online users — first. On mobile and desktop online-cell mode, wraps the toggle
         // and (in online-cell mode) also the expanded panel.
         if (hasOnline) {
-            const onlineStat = buildStat('fa-user', totalOnline, pre + 'tooltip_online', pre + 'label_online', '.CompactWidget-stat--online');
+            // Skip the tooltip on the online stat when it lives inside a tappable wrapper
+            // (mobile, or desktop online-cell) — tapping the cell expands the panel instead.
+            const noOnlineTooltip = inlineToggle;
+            const onlineStat = buildStat('fa-user', totalOnline, pre + 'tooltip_online', pre + 'label_online', '.CompactWidget-stat--online', false, noOnlineTooltip);
 
             if (inlineToggle) {
                 // Online cell wrapper: holds the stat + toggle side by side.
-                // In desktop online-cell mode it's also the click target for expanding.
-                const cellClickable = isDesktopFullWidth && isOnlineCellMode && hasExpandableContent;
+                // Clickable on mobile (always, if expandable) and desktop online-cell mode —
+                // anywhere inside the wrapper toggles the panel, regardless of the chevron.
+                const cellClickable = (isMobile || (isDesktopFullWidth && isOnlineCellMode)) && hasExpandableContent;
                 stats.push(m('.CompactWidget-onlineWrapper', {
                     onclick: cellClickable
                         ? (e) => { e.stopPropagation(); this.expanded = !this.expanded; m.redraw(); }

@@ -79,11 +79,11 @@
     cursor: pointer;
 }
 
-/* Online-cell mode: only the online wrapper is interactive */
-.CompactWidget--onlineCell .CompactWidget-onlineWrapper {
+/* Clickable online wrapper (desktop online-cell mode, mobile) — whole cell is the hit target */
+.CompactWidget-onlineWrapper[role="button"] {
     cursor: pointer;
 }
-.CompactWidget--onlineCell .CompactWidget-onlineWrapper .CompactWidget-stat {
+.CompactWidget-onlineWrapper[role="button"] .CompactWidget-stat {
     cursor: pointer;
 }
 
@@ -92,6 +92,7 @@
 .CompactWidget-onlineWrapper {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 2px;
     min-width: 0;
     position: relative;
@@ -325,11 +326,6 @@
 
     .CompactWidget-stats {
         grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
-    }
-
-    /* On mobile the online wrapper is a grid cell like other stats */
-    .CompactWidget-onlineWrapper {
-        justify-content: center;
     }
 }
 
