@@ -26,6 +26,7 @@ A compact widget that displays online users, forum statistics (discussions, post
 - **Forum Statistics** — Displays discussion count, post count, and total user count with plural-aware labels.
 - **Latest Registration** — Shows the most recently registered user with their avatar and display name.
 - **Expandable Panel** — Compact stats bar with a click-to-expand panel for detailed information.
+- **Live Updates** — Widget data auto-refreshes when you navigate back to the forum index (SPA navigation) or bring the browser tab back to the foreground. Combined with event-driven server cache invalidation on discussion / post / user events, stats stay fresh on every page return without a full reload. Desktop and mobile widget instances share one in-flight request, and actors without widget permissions skip the refetch entirely.
 - **Configurable Layout** — Choose between a classic sidebar widget or a full-width bar above the discussion list. Full-width mode supports positioning above, inside, or below the toolbar on desktop.
 - **Separate Desktop/Mobile Settings** — Independent bar position settings for desktop and mobile views.
 - **Stat Toggles** — Each statistic (discussions, posts, users, latest registration) can be individually enabled or disabled from the admin panel.
