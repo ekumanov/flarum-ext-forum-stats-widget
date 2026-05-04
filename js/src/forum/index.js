@@ -45,6 +45,44 @@ function refreshForumData() {
     return inflightRefresh;
 }
 
+// === Presence heartbeat ===
+// Periodically pings the forum resource so Flarum's auth middleware refreshes
+// last_seen_at, keeping users on long-lived tabs visible in the online widget.
+// Server cost is bounded by core's 180s LAST_SEEN_UPDATE_DIFF write throttle;
+// the sparse fieldset keeps the response body to a few hundred bytes.
+const HEARTBEAT_INTERVAL_MS = 120000;
+let heartbeatTimer = null;
+let heartbeatStopped = false;
+
+function fireHeartbeat() {
+    // Outer try/catch is a safety net: a heartbeat is a background convenience
+    // and must never break the forum, even if app.session/app.forum are in an
+    // unexpected state. Failures are silently swallowed; the next tick retries.
+    try {
+        if (heartbeatStopped) return;
+        if (!app.session || !app.session.user) return;
+        if (document.visibilityState !== 'visible') return;
+        if (!app.forum || !app.forum.attribute('forumStatsEnableHeartbeat')) return;
+
+        app.request({
+            method: 'GET',
+            url: app.forum.attribute('apiUrl') + '/forums',
+            params: { 'fields[forums]': 'id' },
+            background: true,
+            errorHandler: () => {},
+        }).catch((err) => {
+            // 401 means the session is gone — stop firing rather than spam.
+            if (err && err.status === 401) {
+                heartbeatStopped = true;
+                if (heartbeatTimer) {
+                    clearInterval(heartbeatTimer);
+                    heartbeatTimer = null;
+                }
+            }
+        });
+    } catch (e) { /* never propagate */ }
+}
+
 class CompactForumWidget extends Component {
     oninit(vnode) {
         super.oninit(vnode);
@@ -353,6 +391,7 @@ app.initializers.add('ekumanov/forum-widgets', () => {
     Forum.prototype.totalOnlineUsers = Model.attribute('totalOnlineUsers');
     Forum.prototype.hiddenOnlineUsers = Model.attribute('hiddenOnlineUsers');
     Forum.prototype.canViewOnlineUsers = Model.attribute('canViewOnlineUsers');
+    Forum.prototype.forumStatsEnableHeartbeat = Model.attribute('forumStatsEnableHeartbeat');
     Forum.prototype.latestRegisteredUser = Model.hasOne('latestRegisteredUser');
 
     // Helper: read settings lazily (app.forum is not available at initializer time)
@@ -407,5 +446,14 @@ app.initializers.add('ekumanov/forum-widgets', () => {
     // already hydrated the forum resource), so this only fires on re-entry.
     extend(IndexPage.prototype, 'oninit', function () {
         if (app.previous?.type) refreshForumData();
+    });
+
+    // Start the presence heartbeat unconditionally — `fireHeartbeat()` does the
+    // per-tick gating (session, visibility, setting). `app.forum` and `app.session`
+    // are not reliably populated at initializer top-level, so any attribute reads
+    // happen inside the timer callback.
+    heartbeatTimer = setInterval(fireHeartbeat, HEARTBEAT_INTERVAL_MS);
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') fireHeartbeat();
     });
 });

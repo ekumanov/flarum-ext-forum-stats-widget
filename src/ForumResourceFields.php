@@ -69,6 +69,13 @@ class ForumResourceFields
             Schema\Str::make('forumStatsExpandedPanelWidth')
                 ->get(fn () => $this->settings->get('ekumanov-forum-widgets.expanded_panel_width', 'online-cell')),
 
+            // Heartbeat: client pings /api/forums periodically so the auth middleware
+            // refreshes last_seen_at. Gated by the online users master toggle since the
+            // heartbeat exists to make the online widget accurate.
+            Schema\Boolean::make('forumStatsEnableHeartbeat')
+                ->get(fn () => $this->isOnlineUsersEnabled()
+                    && (bool) $this->settings->get('ekumanov-forum-widgets.enable_heartbeat', true)),
+
             // === Forum Statistics ===
 
             Schema\Integer::make('forumStatsDiscussionsCount')

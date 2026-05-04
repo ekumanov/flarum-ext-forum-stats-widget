@@ -104,6 +104,12 @@ app.initializers.add('ekumanov/forum-widgets', () => {
         help: app.translator.trans('ekumanov-forum-widgets.admin.settings.online_users_cache_ttl_help'),
         min: 0,
     });
+    reg.registerSetting({
+        setting: 'ekumanov-forum-widgets.enable_heartbeat',
+        type: 'boolean',
+        label: app.translator.trans('ekumanov-forum-widgets.admin.settings.enable_heartbeat'),
+        help: app.translator.trans('ekumanov-forum-widgets.admin.settings.enable_heartbeat_help'),
+    });
 
     // === Section: Forum Statistics ===
     reg.registerSetting({
@@ -205,6 +211,7 @@ app.initializers.add('ekumanov/forum-widgets', () => {
             app.translator.trans('ekumanov-forum-widgets.admin.settings.max_online_users_privileged').toString(),
             app.translator.trans('ekumanov-forum-widgets.admin.settings.last_seen_interval').toString(),
             app.translator.trans('ekumanov-forum-widgets.admin.settings.online_users_cache_ttl').toString(),
+            app.translator.trans('ekumanov-forum-widgets.admin.settings.enable_heartbeat').toString(),
         ];
 
         // Labels for layout-dependent settings

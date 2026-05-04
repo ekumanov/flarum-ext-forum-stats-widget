@@ -26,6 +26,7 @@ return [
         ->default('ekumanov-forum-widgets.max_online_users_privileged', 40)
         ->default('ekumanov-forum-widgets.last_seen_interval', 10)
         ->default('ekumanov-forum-widgets.online_users_cache_ttl', 30)
+        ->default('ekumanov-forum-widgets.enable_heartbeat', true)
         ->default('ekumanov-forum-widgets.show_discussions_count', true)
         ->default('ekumanov-forum-widgets.show_posts_count', true)
         ->default('ekumanov-forum-widgets.show_users_count', true)
