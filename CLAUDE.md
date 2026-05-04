@@ -44,7 +44,7 @@ There is no test suite.
 - `show_online_users` (bool) — Master toggle for the online users feature.
 - `max_online_users` (int, default 15) — Max user avatars shown for regular users; overflow shown as "+N more".
 - `max_online_users_privileged` (int, default 40) — Max user avatars shown for privileged users (those with `user.viewLastSeenAt` permission).
-- `last_seen_interval` (int, default 10) — Minutes since last activity to consider online.
+- `last_seen_interval` (int, default 5) — Minutes since last activity to consider online.
 - `online_users_cache_ttl` (int, default 30) — Cache TTL for online users.
 - `stats_cache_duration` (int, default 600) — Cache TTL for discussion/post/user counts.
 - `ignore_private_discussions` (bool) — Exclude private discussions from count.

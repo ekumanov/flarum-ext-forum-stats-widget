@@ -120,7 +120,7 @@ class ForumResourceFields
         }
 
         $ttl = max(1, (int) $this->settings->get('ekumanov-forum-widgets.online_users_cache_ttl', 30));
-        $interval = max(1, (int) $this->settings->get('ekumanov-forum-widgets.last_seen_interval', 10));
+        $interval = max(1, (int) $this->settings->get('ekumanov-forum-widgets.last_seen_interval', 5));
         $maxUsers = $canSeeHidden
             ? max(1, (int) $this->settings->get('ekumanov-forum-widgets.max_online_users_privileged', 40))
             : max(1, (int) $this->settings->get('ekumanov-forum-widgets.max_online_users', 15));

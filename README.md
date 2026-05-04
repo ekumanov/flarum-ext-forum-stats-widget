@@ -66,7 +66,7 @@ Then enable the extension in the admin panel under **Extensions > Forum Stats Wi
 | Show online users | Enabled | Master toggle for the online users feature |
 | Maximum online users to display | 15 | Max avatars shown for regular users; overflow shown as "+N more" |
 | Maximum online users to display (privileged) | 40 | Max avatars for users with "Always view user last seen time" permission |
-| Last seen interval (minutes) | 10 | How many minutes since last activity to consider a user online |
+| Last seen interval (minutes) | 5 | How many minutes since last activity to consider a user online (paired with the presence heartbeat default) |
 | Online users cache duration (seconds) | 30 | How long to cache the online users list |
 | Show discussions/posts/users/latest | All enabled | Individual toggles for each statistic |
 | Statistics cache duration (seconds) | 600 | How long to cache discussion/post/user counts and latest registration |
