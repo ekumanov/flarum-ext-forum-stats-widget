@@ -27,6 +27,7 @@ A compact widget that displays online users, forum statistics (discussions, post
 - **Latest Registration** — Shows the most recently registered user with their avatar and display name.
 - **Expandable Panel** — Compact stats bar with a click-to-expand panel for detailed information.
 - **Live Updates** — Widget data auto-refreshes when you navigate back to the forum index (SPA navigation) or bring the browser tab back to the foreground. Combined with event-driven server cache invalidation on discussion / post / user events, stats stay fresh on every page return without a full reload. Desktop and mobile widget instances share one in-flight request, and actors without widget permissions skip the refetch entirely.
+- **Presence Heartbeat** — Logged-in users with a focused forum tab send a small background ping every minute so the "online" indicator stays accurate even while they're reading or composing a long reply via the realtime extension without navigating. On the forum index, that same ping is route-aware: it doubles as a widget refresh (with sparse fields, ~500 bytes), keeping the online users list and stats fresh while the user sits on the page. Off the index, it's a 92-byte sparse ping. Throttled to one DB write per 3 minutes per user, skipped when the tab is hidden or the user is a guest, and can be disabled from admin if you want zero background traffic.
 - **Configurable Layout** — Choose between a classic sidebar widget or a full-width bar above the discussion list. Full-width mode supports positioning above, inside, or below the toolbar on desktop.
 - **Separate Desktop/Mobile Settings** — Independent bar position settings for desktop and mobile views.
 - **Stat Toggles** — Each statistic (discussions, posts, users, latest registration) can be individually enabled or disabled from the admin panel.
@@ -68,6 +69,7 @@ Then enable the extension in the admin panel under **Extensions > Forum Stats Wi
 | Maximum online users to display (privileged) | 40 | Max avatars for users with "Always view user last seen time" permission |
 | Last seen interval (minutes) | 5 | How many minutes since last activity to consider a user online (paired with the presence heartbeat default) |
 | Online users cache duration (seconds) | 30 | How long to cache the online users list |
+| Enable presence heartbeat | Enabled | Whether logged-in users with a focused tab send a background ping every minute to keep their last-seen timestamp fresh (and on the forum index, also auto-refresh the widget data). Disable for zero background traffic |
 | Show discussions/posts/users/latest | All enabled | Individual toggles for each statistic |
 | Statistics cache duration (seconds) | 600 | How long to cache discussion/post/user counts and latest registration |
 | Ignore private discussions in count | Disabled | Exclude private discussions from the count |

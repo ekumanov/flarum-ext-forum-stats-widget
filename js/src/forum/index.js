@@ -35,8 +35,13 @@ function refreshForumData() {
     if (inflightRefresh) return inflightRefresh;
     // Flarum 2.0's ForumResource is a singleton keyed at /api/forums (no /:id),
     // so we call the 2-arg form of Store.find — passing an id would hit /api/forums/1 and 404.
+    // Sparse fields[users] keeps the included user objects to ~180 bytes each instead of
+    // the ~2.9 KB Flarum + extensions would otherwise serialize per user.
     inflightRefresh = app.store
-        .find('forums', { include: 'onlineUsers,latestRegisteredUser' })
+        .find('forums', {
+            include: 'onlineUsers,latestRegisteredUser',
+            'fields[users]': 'username,displayName,avatarUrl,slug',
+        })
         .catch(() => {})
         .then(() => {
             inflightRefresh = null;
@@ -48,9 +53,10 @@ function refreshForumData() {
 // === Presence heartbeat ===
 // Periodically pings the forum resource so Flarum's auth middleware refreshes
 // last_seen_at, keeping users on long-lived tabs visible in the online widget.
-// Server cost is bounded by core's 180s LAST_SEEN_UPDATE_DIFF write throttle;
-// the sparse fieldset keeps the response body to a few hundred bytes.
-const HEARTBEAT_INTERVAL_MS = 120000;
+// On the index page (with the widget mounted) the same tick also fetches fresh
+// widget data — one round trip covers both jobs. Off-index, it's just a sparse
+// ping. Server cost is bounded by core's 180s LAST_SEEN_UPDATE_DIFF write throttle.
+const HEARTBEAT_INTERVAL_MS = 60000;
 let heartbeatTimer = null;
 let heartbeatStopped = false;
 
@@ -64,6 +70,14 @@ function fireHeartbeat() {
         if (document.visibilityState !== 'visible') return;
         if (!app.forum || !app.forum.attribute('forumStatsEnableHeartbeat')) return;
 
+        const onIndex = app.current && app.current.get && app.current.get('routeName') === 'index';
+        if (onIndex && hasVisibleWidgetData()) {
+            // Combined call: refresh widget data; auth middleware updates last_seen_at as a side effect.
+            refreshForumData();
+            return;
+        }
+
+        // Off-index or no widget permissions: pure sparse ping just to bump last_seen_at.
         app.request({
             method: 'GET',
             url: app.forum.attribute('apiUrl') + '/forums',
