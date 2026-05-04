@@ -83,7 +83,7 @@ class CompactForumWidget extends Component {
 
         const showToggle = app.forum.attribute('forumStatsShowToggle') !== false;
         const expandedPanelWidth = isDesktopFullWidth
-            ? (app.forum.attribute('forumStatsExpandedPanelWidth') || 'full-bar')
+            ? (app.forum.attribute('forumStatsExpandedPanelWidth') || 'online-cell')
             : 'full-bar';
         const isOnlineCellMode = expandedPanelWidth === 'online-cell';
 
@@ -358,7 +358,7 @@ app.initializers.add('ekumanov/forum-widgets', () => {
     // Helper: read settings lazily (app.forum is not available at initializer time)
     const getLayout = () => app.forum.attribute('forumStatsWidgetLayout') || 'full-width';
     const getDesktopPos = () => app.forum.attribute('forumStatsBarPositionDesktop') || 'inside-toolbar';
-    const getMobilePos = () => app.forum.attribute('forumStatsBarPositionMobile') || 'above-toolbar';
+    const getMobilePos = () => app.forum.attribute('forumStatsBarPositionMobile') || 'inside-toolbar';
     // contentItems priorities: Flarum renders higher priority earlier. Toolbar is ~100 and the
     // discussion list is below that. -1000 drops the widget to the end of IndexPage content,
     // rendering it directly above the site footer.

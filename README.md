@@ -59,14 +59,14 @@ Then enable the extension in the admin panel under **Extensions > Forum Stats Wi
 |---------|---------|-------------|
 | Widget layout | Full width | Classic sidebar widget or full-width bar above discussions |
 | Bar position (desktop) | Inside the toolbar | Where to place the bar relative to the toolbar (full-width only). Options: above, inside, or below |
-| Bar position (mobile) | Above the toolbar | Where to place the bar on mobile. Options: above or below the toolbar |
+| Bar position (mobile) | Inside the toolbar | Where to place the bar on mobile. Options: above, inside, or below the toolbar |
 | Widget sidebar position | -10 | Controls sidebar position; lower values = further down (classic layout only) |
 | Show expand/collapse toggle button | Enabled | Show the chevron button that expands/collapses the details panel. When disabled, the panel is still reachable by clicking the bar (full-bar mode), the online users cell (online-cell and classic modes), or via keyboard on the online cell |
 | Expanded panel width (desktop) | Online users cell only | In full-width desktop mode, where the expanded panel anchors. **Online users cell only**: panel drops below the online users count; clicking the online cell expands. **Full bar width**: panel spans the full bar; clicking anywhere on the bar expands |
 | Show online users | Enabled | Master toggle for the online users feature |
 | Maximum online users to display | 15 | Max avatars shown for regular users; overflow shown as "+N more" |
 | Maximum online users to display (privileged) | 40 | Max avatars for users with "Always view user last seen time" permission |
-| Last seen interval (minutes) | 5 | How many minutes since last activity to consider a user online |
+| Last seen interval (minutes) | 10 | How many minutes since last activity to consider a user online |
 | Online users cache duration (seconds) | 30 | How long to cache the online users list |
 | Show discussions/posts/users/latest | All enabled | Individual toggles for each statistic |
 | Statistics cache duration (seconds) | 600 | How long to cache discussion/post/user counts and latest registration |

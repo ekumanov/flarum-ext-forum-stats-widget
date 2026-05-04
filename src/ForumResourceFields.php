@@ -55,19 +55,19 @@ class ForumResourceFields
                 ->get(fn () => (int) $this->settings->get('ekumanov-forum-widgets.widget_position', -10)),
 
             Schema\Str::make('forumStatsWidgetLayout')
-                ->get(fn () => $this->settings->get('ekumanov-forum-widgets.widget_layout', 'classic')),
+                ->get(fn () => $this->settings->get('ekumanov-forum-widgets.widget_layout', 'full-width')),
 
             Schema\Str::make('forumStatsBarPositionDesktop')
-                ->get(fn () => $this->settings->get('ekumanov-forum-widgets.bar_position_desktop', 'below-toolbar')),
+                ->get(fn () => $this->settings->get('ekumanov-forum-widgets.bar_position_desktop', 'inside-toolbar')),
 
             Schema\Str::make('forumStatsBarPositionMobile')
-                ->get(fn () => $this->settings->get('ekumanov-forum-widgets.bar_position_mobile', 'below-toolbar')),
+                ->get(fn () => $this->settings->get('ekumanov-forum-widgets.bar_position_mobile', 'inside-toolbar')),
 
             Schema\Boolean::make('forumStatsShowToggle')
                 ->get(fn () => (bool) $this->settings->get('ekumanov-forum-widgets.show_toggle', true)),
 
             Schema\Str::make('forumStatsExpandedPanelWidth')
-                ->get(fn () => $this->settings->get('ekumanov-forum-widgets.expanded_panel_width', 'full-bar')),
+                ->get(fn () => $this->settings->get('ekumanov-forum-widgets.expanded_panel_width', 'online-cell')),
 
             // === Forum Statistics ===
 
@@ -113,7 +113,7 @@ class ForumResourceFields
         }
 
         $ttl = max(1, (int) $this->settings->get('ekumanov-forum-widgets.online_users_cache_ttl', 30));
-        $interval = max(1, (int) $this->settings->get('ekumanov-forum-widgets.last_seen_interval', 5));
+        $interval = max(1, (int) $this->settings->get('ekumanov-forum-widgets.last_seen_interval', 10));
         $maxUsers = $canSeeHidden
             ? max(1, (int) $this->settings->get('ekumanov-forum-widgets.max_online_users_privileged', 40))
             : max(1, (int) $this->settings->get('ekumanov-forum-widgets.max_online_users', 15));

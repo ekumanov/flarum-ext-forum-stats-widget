@@ -41,7 +41,7 @@ app.initializers.add('ekumanov/forum-widgets', () => {
             'below-toolbar': app.translator.trans('ekumanov-forum-widgets.admin.settings.bar_position_below'),
             'above-footer': app.translator.trans('ekumanov-forum-widgets.admin.settings.bar_position_above_footer'),
         },
-        default: 'above-toolbar',
+        default: 'inside-toolbar',
     });
     reg.registerSetting({
         setting: 'ekumanov-forum-widgets.widget_position',
