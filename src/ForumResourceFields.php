@@ -14,6 +14,19 @@ use Illuminate\Contracts\Cache\Repository as Cache;
 
 class ForumResourceFields
 {
+    /**
+     * Hard cap on the number of online users that the cache stores and the
+     * widget renders. Sized to comfortably cover any real-world Flarum forum
+     * (in practice forums of this scale see <100 concurrent online users)
+     * while keeping the rendered DOM list snappy on mobile and the JSON
+     * payload small with sparse fields[users] (~180 bytes per user, so 500
+     * worst-case ≈ 90 KB). Beyond this cap the panel still degrades
+     * gracefully via the "+N more" overflow row. Was a per-cache admin
+     * setting (15 / 40) until v1.6 — bandwidth no longer needs the knob now
+     * that user objects are sparsely serialized.
+     */
+    public const MAX_DISPLAYED_ONLINE = 500;
+
     protected ?array $onlineUserDataCache = null;
     protected ?string $onlineUserDataCacheKey = null;
     protected ?array $statsCache = null;
@@ -176,9 +189,7 @@ class ForumResourceFields
 
         $ttl = max(1, (int) $this->settings->get('ekumanov-forum-widgets.online_users_cache_ttl', 30));
         $interval = max(1, (int) $this->settings->get('ekumanov-forum-widgets.last_seen_interval', 5));
-        $maxUsers = $canSeeHidden
-            ? max(1, (int) $this->settings->get('ekumanov-forum-widgets.max_online_users_privileged', 40))
-            : max(1, (int) $this->settings->get('ekumanov-forum-widgets.max_online_users', 15));
+        $maxUsers = self::MAX_DISPLAYED_ONLINE;
 
         $data = $this->cache->remember($cacheKey, $ttl, function () use ($canSeeHidden, $interval, $maxUsers) {
             $allOnlineQuery = User::query()

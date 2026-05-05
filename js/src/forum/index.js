@@ -314,7 +314,7 @@ class CompactForumWidget extends Component {
                                 ])
                                 : null,
                             hiddenOnline > 0
-                                ? m('.CompactWidget-expandedUser.CompactWidget-expandedUser--hidden', {
+                                ? m('.CompactWidget-expandedUser.CompactWidget-expandedUser--hidden.CompactWidget-expandedUser--summary', {
                                     role: 'listitem',
                                     'aria-label': hiddenOnline + ' ' + app.translator.trans('ekumanov-forum-widgets.forum.online_users.hidden_users', { count: hiddenOnline }),
                                 }, [
@@ -325,7 +325,7 @@ class CompactForumWidget extends Component {
                                 ])
                                 : null,
                             onlineGuestsCount > 0
-                                ? m('.CompactWidget-expandedUser.CompactWidget-expandedUser--guest', {
+                                ? m('.CompactWidget-expandedUser.CompactWidget-expandedUser--guest.CompactWidget-expandedUser--summary', {
                                     role: 'listitem',
                                     'aria-label': onlineGuestsCount + ' ' + app.translator.trans('ekumanov-forum-widgets.forum.online_users.guests', { count: onlineGuestsCount }),
                                 }, [

@@ -256,6 +256,24 @@
     background: transparent;
 }
 
+/* Visual break between "people we identify" (avatars + overflow) and
+   "count summaries" (hidden / guests). Pure-CSS approach: every summary row
+   carries the --summary class, but only the FIRST one in the list shows the
+   border — the :not(:first-child) guard suppresses it when the panel opens
+   straight onto a summary (no avatars above), and the adjacent-sibling rule
+   suppresses it for the second consecutive summary. */
+.CompactWidget-expandedUser--summary:not(:first-child) {
+    border-top: 1px solid var(--control-bg, rgba(0, 0, 0, 0.08));
+    margin-top: 6px;
+    padding-top: 8px;
+}
+
+.CompactWidget-expandedUser--summary + .CompactWidget-expandedUser--summary {
+    border-top: none;
+    margin-top: 0;
+    padding-top: 3px;
+}
+
 .CompactWidget-expandedUser--hidden {
     cursor: default;
 }

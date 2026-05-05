@@ -49,10 +49,6 @@ ekumanov-forum-widgets:
       section_online_users_help: Configure the online users display in the expanded widget panel.
       show_online_users: Show online users
       show_online_users_help: Enable or disable the online users feature entirely. When disabled, no online user queries will be executed.
-      max_online_users: Maximum online users to display
-      max_online_users_help: "Maximum avatars shown for regular users. Users beyond this number appear as a \"+N more\" indicator. Higher values increase cache size and API payload. Recommended: 10–20."
-      max_online_users_privileged: Maximum online users to display (privileged)
-      max_online_users_privileged_help: "Maximum avatars shown for privileged users (those with the \"Always view user last seen time\" permission — typically admins and moderators). Since this cache serves fewer users, it can safely hold more entries. Recommended: 30–50."
       last_seen_interval: Last seen interval (minutes)
       last_seen_interval_help: "How many minutes since last activity to consider a user online. Default: 5, which pairs with the presence heartbeat (enabled by default) — the heartbeat keeps activity fresh for users with a focused tab open, so active users won't drop off. If you disable the heartbeat, raise this to 10 or higher to avoid users blinking offline mid-session."
       online_users_cache_ttl: Online users cache duration (seconds)

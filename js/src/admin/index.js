@@ -75,22 +75,6 @@ app.initializers.add('ekumanov/forum-widgets', () => {
         help: app.translator.trans('ekumanov-forum-widgets.admin.settings.show_online_users_help'),
     });
     reg.registerSetting({
-        setting: 'ekumanov-forum-widgets.max_online_users',
-        type: 'number',
-        label: app.translator.trans('ekumanov-forum-widgets.admin.settings.max_online_users'),
-        help: app.translator.trans('ekumanov-forum-widgets.admin.settings.max_online_users_help'),
-        min: 1,
-        max: 50,
-    });
-    reg.registerSetting({
-        setting: 'ekumanov-forum-widgets.max_online_users_privileged',
-        type: 'number',
-        label: app.translator.trans('ekumanov-forum-widgets.admin.settings.max_online_users_privileged'),
-        help: app.translator.trans('ekumanov-forum-widgets.admin.settings.max_online_users_privileged_help'),
-        min: 1,
-        max: 100,
-    });
-    reg.registerSetting({
         setting: 'ekumanov-forum-widgets.last_seen_interval',
         type: 'number',
         label: app.translator.trans('ekumanov-forum-widgets.admin.settings.last_seen_interval'),
@@ -224,8 +208,6 @@ app.initializers.add('ekumanov/forum-widgets', () => {
 
         // Labels for settings dependent on "Show online users"
         const onlineSettingLabels = [
-            app.translator.trans('ekumanov-forum-widgets.admin.settings.max_online_users').toString(),
-            app.translator.trans('ekumanov-forum-widgets.admin.settings.max_online_users_privileged').toString(),
             app.translator.trans('ekumanov-forum-widgets.admin.settings.last_seen_interval').toString(),
             app.translator.trans('ekumanov-forum-widgets.admin.settings.online_users_cache_ttl').toString(),
             app.translator.trans('ekumanov-forum-widgets.admin.settings.enable_heartbeat').toString(),

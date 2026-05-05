@@ -22,7 +22,7 @@ A compact widget that displays online users, forum statistics (discussions, post
 
 ## Features
 
-- **Online Users** — Shows avatars of currently online users, sorted by most recently active. Users beyond the configurable maximum appear as a "+N more" indicator. Users who have hidden their online status are shown as a separate "hidden" count with a dashed circle.
+- **Online Users** — Shows avatars of currently online users, sorted by most recently active. The list is internally capped at 500 — high enough that real-world forums never hit it; if they do, the overflow renders as a "+N more" indicator. Users who have hidden their online status are shown as a separate "hidden" count with a dashed circle.
 - **Online Guests** — Optional approximate count of unauthenticated visitors browsing the forum, shown as a separate row with a dotted circle below the hidden users. Each guest tab pings a small endpoint that records a hash of the visitor's IP and User-Agent into a short-lived presence map; the displayed count is the number of unique fingerprints seen within the "last seen interval". Counting is approximate by design — visitors behind a shared NAT collapse into one, mobile users on rotating IPs may be over-counted — and **no persistent identifier is stored on the visitor's browser**. The endpoint is rate-limited per IP, the in-memory map is hard-capped (oldest evicted on overflow), and the count can optionally be merged into the bar's main "online" number.
 - **Forum Statistics** — Displays discussion count, post count, and total user count with plural-aware labels.
 - **Latest Registration** — Shows the most recently registered user with their avatar and display name.
@@ -32,7 +32,7 @@ A compact widget that displays online users, forum statistics (discussions, post
 - **Configurable Layout** — Choose between a classic sidebar widget or a full-width bar above the discussion list. Full-width mode supports positioning above, inside, or below the toolbar on desktop.
 - **Separate Desktop/Mobile Settings** — Independent bar position settings for desktop and mobile views.
 - **Stat Toggles** — Each statistic (discussions, posts, users, latest registration) can be individually enabled or disabled from the admin panel.
-- **Two-Tier Caching** — Separate caches for privileged users (admins/mods who can see hidden users) and regular users, each with its own configurable display limit. Zero database queries on cache hit.
+- **Two-Tier Caching** — Separate caches for privileged users (admins/mods who can see hidden users) and regular users — same display cap, different result sets. Zero database queries on cache hit.
 - **Event-Driven Cache Invalidation** — Caches are automatically flushed when discussions, posts, or users are created or deleted.
 - **Granular Permissions** — Each stat (online users, discussions, posts, users, latest registration) can be independently permission-gated. All default to visible for guests.
 - **Accessible** — ARIA labels and roles throughout, screen-reader-friendly counts (e.g. the guest badge announces as "12,345 guests" rather than relying on the visual dotted-vs-dashed distinction), section headings exposed via `role="heading"` for H-key navigation, full keyboard support (Tab to the toggle, Enter to expand, Tab through the panel, Escape to close and return focus to the toggle), and elastic count badges that gracefully degrade to a pill shape for large numbers without overflowing.
@@ -69,8 +69,6 @@ Then enable the extension in the admin panel under **Extensions > Forum Stats Wi
 | Show expand/collapse toggle button | Enabled | Show the chevron button that expands/collapses the details panel. When disabled, the panel is still reachable by clicking the bar (full-bar mode), the online users cell (online-cell and classic modes), or via keyboard on the online cell |
 | Expanded panel width (desktop) | Online users cell only | In full-width desktop mode, where the expanded panel anchors. **Online users cell only**: panel drops below the online users count; clicking the online cell expands. **Full bar width**: panel spans the full bar; clicking anywhere on the bar expands |
 | Show online users | Enabled | Master toggle for the online users feature |
-| Maximum online users to display | 15 | Max avatars shown for regular users; overflow shown as "+N more" |
-| Maximum online users to display (privileged) | 40 | Max avatars for users with "Always view user last seen time" permission |
 | Last seen interval (minutes) | 5 | How many minutes since last activity to consider a user online (paired with the presence heartbeat default) |
 | Online users cache duration (seconds) | 30 | How long to cache the online users list |
 | Enable presence heartbeat | Enabled | Whether logged-in users with a focused tab send a background ping every minute to keep their last-seen timestamp fresh (and on the forum index, also auto-refresh the widget data). Disable for zero background traffic |
@@ -94,8 +92,10 @@ All permissions default to **Everyone** (including guests):
 
 The extension maintains **two separate online user caches**:
 
-1. **Privileged cache** — For users with the "Always view user last seen time" permission (typically admins and moderators). This cache includes users who have hidden their online status and uses the higher privileged display limit.
-2. **Regular cache** — For all other users. Hidden users are excluded from this cache and shown only as a count.
+1. **Privileged cache** — For users with the "Always view user last seen time" permission (typically admins and moderators). Includes users who have hidden their online status.
+2. **Regular cache** — For all other users. Hidden users are excluded and shown only as a count.
+
+Both caches share a hardcoded ceiling of 500 entries — well above what any real forum sees concurrently. Beyond that the panel falls back to a "+N more" overflow row.
 
 Both caches default to a 30-second TTL. The forum statistics cache (discussions, posts, users, latest registration) has a separate 600-second TTL and is automatically invalidated when content is created or deleted.
 

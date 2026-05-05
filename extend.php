@@ -23,8 +23,6 @@ return [
         ->default('ekumanov-forum-widgets.bar_position_desktop', 'inside-toolbar')
         ->default('ekumanov-forum-widgets.bar_position_mobile', 'inside-toolbar')
         ->default('ekumanov-forum-widgets.show_online_users', true)
-        ->default('ekumanov-forum-widgets.max_online_users', 15)
-        ->default('ekumanov-forum-widgets.max_online_users_privileged', 40)
         ->default('ekumanov-forum-widgets.last_seen_interval', 5)
         ->default('ekumanov-forum-widgets.online_users_cache_ttl', 30)
         ->default('ekumanov-forum-widgets.enable_heartbeat', true)
