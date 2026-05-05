@@ -2,6 +2,7 @@
 
 namespace Ekumanov\ForumWidgets;
 
+use Ekumanov\ForumWidgets\Api\GuestHeartbeatController;
 use Flarum\Api\Endpoint;
 use Flarum\Api\Resource\ForumResource;
 use Flarum\Extend;
@@ -27,6 +28,8 @@ return [
         ->default('ekumanov-forum-widgets.last_seen_interval', 5)
         ->default('ekumanov-forum-widgets.online_users_cache_ttl', 30)
         ->default('ekumanov-forum-widgets.enable_heartbeat', true)
+        ->default('ekumanov-forum-widgets.show_online_guests', false)
+        ->default('ekumanov-forum-widgets.include_guests_in_total', false)
         ->default('ekumanov-forum-widgets.show_discussions_count', true)
         ->default('ekumanov-forum-widgets.show_posts_count', true)
         ->default('ekumanov-forum-widgets.show_users_count', true)
@@ -42,6 +45,9 @@ return [
         ->endpoint(Endpoint\Show::class, function (Endpoint\Show $endpoint) {
             return $endpoint->addDefaultInclude(['onlineUsers', 'latestRegisteredUser']);
         }),
+
+    (new Extend\Routes('api'))
+        ->post('/forum-widgets/guest-heartbeat', 'forum-widgets.guest-heartbeat', GuestHeartbeatController::class),
 
     (new Extend\Event())
         ->subscribe(Listener\FlushCaches::class),

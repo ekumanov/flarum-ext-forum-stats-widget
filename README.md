@@ -23,6 +23,7 @@ A compact widget that displays online users, forum statistics (discussions, post
 ## Features
 
 - **Online Users** — Shows avatars of currently online users, sorted by most recently active. Users beyond the configurable maximum appear as a "+N more" indicator. Users who have hidden their online status are shown as a separate "hidden" count with a dashed circle.
+- **Online Guests** — Optional approximate count of unauthenticated visitors browsing the forum, shown as a separate row with a dotted circle below the hidden users. Each guest tab pings a small endpoint that records a hash of the visitor's IP and User-Agent into a short-lived presence map; the displayed count is the number of unique fingerprints seen within the "last seen interval". Counting is approximate by design — visitors behind a shared NAT collapse into one, mobile users on rotating IPs may be over-counted — and **no persistent identifier is stored on the visitor's browser**. The endpoint is rate-limited per IP, the in-memory map is hard-capped (oldest evicted on overflow), and the count can optionally be merged into the bar's main "online" number.
 - **Forum Statistics** — Displays discussion count, post count, and total user count with plural-aware labels.
 - **Latest Registration** — Shows the most recently registered user with their avatar and display name.
 - **Expandable Panel** — Compact stats bar with a click-to-expand panel for detailed information.
@@ -34,8 +35,8 @@ A compact widget that displays online users, forum statistics (discussions, post
 - **Two-Tier Caching** — Separate caches for privileged users (admins/mods who can see hidden users) and regular users, each with its own configurable display limit. Zero database queries on cache hit.
 - **Event-Driven Cache Invalidation** — Caches are automatically flushed when discussions, posts, or users are created or deleted.
 - **Granular Permissions** — Each stat (online users, discussions, posts, users, latest registration) can be independently permission-gated. All default to visible for guests.
-- **Accessible** — ARIA labels, roles, keyboard navigation, and screen reader support throughout.
-- **Fully Localizable** — All strings use locale keys with ICU plural support.
+- **Accessible** — ARIA labels and roles throughout, screen-reader-friendly counts (e.g. the guest badge announces as "12,345 guests" rather than relying on the visual dotted-vs-dashed distinction), section headings exposed via `role="heading"` for H-key navigation, full keyboard support (Tab to the toggle, Enter to expand, Tab through the panel, Escape to close and return focus to the toggle), and elastic count badges that gracefully degrade to a pill shape for large numbers without overflowing.
+- **Fully Localizable** — Every user-facing string flows through locale keys with ICU plural support; no hardcoded English. Translators can add a language by dropping a YAML file alongside `locale/en.yml`.
 
 ## Requirements
 
@@ -70,6 +71,8 @@ Then enable the extension in the admin panel under **Extensions > Forum Stats Wi
 | Last seen interval (minutes) | 5 | How many minutes since last activity to consider a user online (paired with the presence heartbeat default) |
 | Online users cache duration (seconds) | 30 | How long to cache the online users list |
 | Enable presence heartbeat | Enabled | Whether logged-in users with a focused tab send a background ping every minute to keep their last-seen timestamp fresh (and on the forum index, also auto-refresh the widget data). Disable for zero background traffic |
+| Show online guests | Disabled | Master toggle for guest counting. When on, each guest tab pings a small unauthenticated endpoint and the resulting count appears in the expanded panel as a dotted circle. Disabled when **Show online users** is off |
+| Include guests in main online count | Disabled | When on, the bar (and panel section header) sums logged-in members and guests; the breakdown rows still list each component separately. Disabled when either **Show online users** or **Show online guests** is off |
 | Show discussions/posts/users/latest | All enabled | Individual toggles for each statistic |
 | Statistics cache duration (seconds) | 600 | How long to cache discussion/post/user counts and latest registration |
 | Ignore private discussions in count | Disabled | Exclude private discussions from the count |
@@ -78,7 +81,7 @@ Then enable the extension in the admin panel under **Extensions > Forum Stats Wi
 
 All permissions default to **Everyone** (including guests):
 
-- **View online users** — See the online users list and count
+- **View online users** — See the online users list and count. Also gates the online guests row when guest counting is enabled.
 - **View discussions count** — See the discussions statistic
 - **View posts count** — See the posts statistic
 - **View users count** — See the users statistic

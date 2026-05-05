@@ -284,36 +284,54 @@
     font-size: 11px;
 }
 
-/* Overflow users solid circle (+N) */
-.CompactWidget-overflowAvatar {
+/* Count badges (overflow / hidden / guest). All three share the same shape +
+   sizing rules: circular for single-digit content, stretching to a pill for
+   multi-character content (e.g. "1.2K"). The corresponding JS uses
+   formatNumber() so the displayed text stays compact even for very large
+   counts, but min-width + padding keeps the badge readable if a future caller
+   passes a long literal. */
+.CompactWidget-overflowAvatar,
+.CompactWidget-hiddenAvatar,
+.CompactWidget-guestAvatar {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 20px;
+    box-sizing: border-box;
+    min-width: 20px;
     height: 20px;
-    border-radius: 50%;
-    border: 1.5px solid var(--muted-color, #aab2bd);
-    background: var(--control-bg, rgba(0, 0, 0, 0.04));
-    color: var(--muted-more-color, #999);
-    font-size: 8px;
-    font-weight: 700;
-    flex-shrink: 0;
-}
-
-/* Hidden users dotted avatar */
-.CompactWidget-hiddenAvatar {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    border: 1.5px dashed var(--muted-color, #aab2bd);
-    background: transparent;
+    padding: 0 4px;
+    border-radius: 10px;
     color: var(--muted-more-color, #999);
     font-size: 9px;
     font-weight: 700;
     flex-shrink: 0;
+    line-height: 1;
+}
+
+.CompactWidget-overflowAvatar {
+    border: 1.5px solid var(--muted-color, #aab2bd);
+    background: var(--control-bg, rgba(0, 0, 0, 0.04));
+    font-size: 8px;
+}
+
+.CompactWidget-hiddenAvatar {
+    border: 1.5px dashed var(--muted-color, #aab2bd);
+    background: transparent;
+}
+
+/* Dotted reads as "ephemeral / not registered" — distinct from dashed "hidden". */
+.CompactWidget-guestAvatar {
+    border: 2px dotted var(--muted-color, #aab2bd);
+    background: transparent;
+}
+
+/* Match the hidden row's non-interactive treatment */
+.CompactWidget-expandedUser--guest {
+    cursor: default;
+}
+
+.CompactWidget-expandedUser--guest:hover {
+    background: transparent;
 }
 
 /* --- Viewport show/hide --- */

@@ -3,6 +3,7 @@
 namespace Ekumanov\ForumWidgets;
 
 use Carbon\Carbon;
+use Ekumanov\ForumWidgets\Api\GuestHeartbeatController;
 use Flarum\Api\Context;
 use Flarum\Api\Schema;
 use Flarum\Discussion\Discussion;
@@ -76,6 +77,28 @@ class ForumResourceFields
                 ->get(fn () => $this->isOnlineUsersEnabled()
                     && (bool) $this->settings->get('ekumanov-forum-widgets.enable_heartbeat', true)),
 
+            // === Online Guests ===
+            // Reuses the viewOnlineUsers permission — there's no separate "see guests"
+            // permission since guest presence is part of the same online-users feature.
+
+            // Tells the JS whether to fire guest heartbeats. Suppressed when the actor
+            // can't view online users, so a guest with denied perms doesn't bother pinging.
+            Schema\Boolean::make('forumStatsShowOnlineGuests')
+                ->visible(fn ($model, Context $context) => $context->getActor()->hasPermission('ekumanov-forum-widgets.viewOnlineUsers'))
+                ->get(fn () => $this->isOnlineGuestsEnabled()),
+
+            // Whether the bar's main online number should sum members + guests.
+            // Frontend reads this to decide between two display modes.
+            Schema\Boolean::make('forumStatsIncludeGuestsInTotal')
+                ->visible(fn ($model, Context $context) => $context->getActor()->hasPermission('ekumanov-forum-widgets.viewOnlineUsers'))
+                ->get(fn () => $this->isOnlineGuestsEnabled()
+                    && (bool) $this->settings->get('ekumanov-forum-widgets.include_guests_in_total', false)),
+
+            Schema\Integer::make('onlineGuestsCount')
+                ->visible(fn ($model, Context $context) => $this->isOnlineGuestsEnabled()
+                    && $context->getActor()->hasPermission('ekumanov-forum-widgets.viewOnlineUsers'))
+                ->get(fn () => $this->getOnlineGuestsCount()),
+
             // === Forum Statistics ===
 
             Schema\Integer::make('forumStatsDiscussionsCount')
@@ -105,6 +128,37 @@ class ForumResourceFields
     protected function isOnlineUsersEnabled(): bool
     {
         return (bool) $this->settings->get('ekumanov-forum-widgets.show_online_users', true);
+    }
+
+    protected function isOnlineGuestsEnabled(): bool
+    {
+        return $this->isOnlineUsersEnabled()
+            && (bool) $this->settings->get('ekumanov-forum-widgets.show_online_guests', false);
+    }
+
+    /**
+     * Counts entries in the guest presence map whose timestamp is still within
+     * the configured window. The map is the same one the heartbeat writes to —
+     * this is just a reader. No DB queries; pure cache hit on every read.
+     */
+    protected function getOnlineGuestsCount(): int
+    {
+        $guests = $this->cache->get(GuestHeartbeatController::CACHE_KEY, []);
+        if (! is_array($guests) || empty($guests)) {
+            return 0;
+        }
+
+        $intervalMin = max(1, (int) $this->settings->get('ekumanov-forum-widgets.last_seen_interval', 5));
+        $cutoff = time() - $intervalMin * 60;
+
+        $count = 0;
+        foreach ($guests as $ts) {
+            if ($ts > $cutoff) {
+                $count++;
+            }
+        }
+
+        return $count;
     }
 
     protected function getOnlineUserData(User $actor): array

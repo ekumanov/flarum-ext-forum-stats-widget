@@ -110,6 +110,18 @@ app.initializers.add('ekumanov/forum-widgets', () => {
         label: app.translator.trans('ekumanov-forum-widgets.admin.settings.enable_heartbeat'),
         help: app.translator.trans('ekumanov-forum-widgets.admin.settings.enable_heartbeat_help'),
     });
+    reg.registerSetting({
+        setting: 'ekumanov-forum-widgets.show_online_guests',
+        type: 'boolean',
+        label: app.translator.trans('ekumanov-forum-widgets.admin.settings.show_online_guests'),
+        help: app.translator.trans('ekumanov-forum-widgets.admin.settings.show_online_guests_help'),
+    });
+    reg.registerSetting({
+        setting: 'ekumanov-forum-widgets.include_guests_in_total',
+        type: 'boolean',
+        label: app.translator.trans('ekumanov-forum-widgets.admin.settings.include_guests_in_total'),
+        help: app.translator.trans('ekumanov-forum-widgets.admin.settings.include_guests_in_total_help'),
+    });
 
     // === Section: Forum Statistics ===
     reg.registerSetting({
@@ -198,6 +210,11 @@ app.initializers.add('ekumanov/forum-widgets', () => {
                 checkbox.removeEventListener('change', () => applyDependencies(container));
                 checkbox.addEventListener('change', () => applyDependencies(container));
             }
+            if (checkbox && labelText.indexOf(app.translator.trans('ekumanov-forum-widgets.admin.settings.show_online_guests').toString()) > -1) {
+                settingValues.showOnlineGuests = checkbox.checked;
+                checkbox.removeEventListener('change', () => applyDependencies(container));
+                checkbox.addEventListener('change', () => applyDependencies(container));
+            }
             if (select && labelText.indexOf(app.translator.trans('ekumanov-forum-widgets.admin.settings.widget_layout').toString()) > -1) {
                 settingValues.widgetLayout = select.value;
                 select.removeEventListener('change', () => applyDependencies(container));
@@ -212,7 +229,12 @@ app.initializers.add('ekumanov/forum-widgets', () => {
             app.translator.trans('ekumanov-forum-widgets.admin.settings.last_seen_interval').toString(),
             app.translator.trans('ekumanov-forum-widgets.admin.settings.online_users_cache_ttl').toString(),
             app.translator.trans('ekumanov-forum-widgets.admin.settings.enable_heartbeat').toString(),
+            app.translator.trans('ekumanov-forum-widgets.admin.settings.show_online_guests').toString(),
         ];
+
+        // "Include guests in total" depends on BOTH show_online_users AND show_online_guests.
+        // Disabled when either is off.
+        const includeGuestsLabel = app.translator.trans('ekumanov-forum-widgets.admin.settings.include_guests_in_total').toString();
 
         // Labels for layout-dependent settings
         const widgetPositionLabel = app.translator.trans('ekumanov-forum-widgets.admin.settings.widget_position').toString();
@@ -227,6 +249,12 @@ app.initializers.add('ekumanov/forum-widgets', () => {
             // Online user sub-settings
             if (onlineSettingLabels.some(sl => labelText.indexOf(sl) > -1)) {
                 group.classList.toggle('ekumanov-forum-widgets-disabled', settingValues.showOnlineUsers === false);
+            }
+
+            // Include-guests-in-total: disabled if EITHER online users OR online guests is off
+            if (labelText.indexOf(includeGuestsLabel) > -1) {
+                const disabled = settingValues.showOnlineUsers === false || settingValues.showOnlineGuests === false;
+                group.classList.toggle('ekumanov-forum-widgets-disabled', disabled);
             }
 
             // Widget position depends on classic layout

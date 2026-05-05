@@ -56,6 +56,10 @@ function refreshForumData() {
 // On the index page (with the widget mounted) the same tick also fetches fresh
 // widget data — one round trip covers both jobs. Off-index, it's just a sparse
 // ping. Server cost is bounded by core's 180s LAST_SEEN_UPDATE_DIFF write throttle.
+//
+// For guests, the auth middleware doesn't apply, so we POST to a dedicated
+// endpoint that records IP+UA fingerprint into a TTL'd presence map. Same tick
+// also refreshes widget data on the index so the guest count updates live.
 const HEARTBEAT_INTERVAL_MS = 60000;
 let heartbeatTimer = null;
 let heartbeatStopped = false;
@@ -66,34 +70,56 @@ function fireHeartbeat() {
     // unexpected state. Failures are silently swallowed; the next tick retries.
     try {
         if (heartbeatStopped) return;
-        if (!app.session || !app.session.user) return;
         if (document.visibilityState !== 'visible') return;
         if (!app.forum || !app.forum.attribute('forumStatsEnableHeartbeat')) return;
 
+        const isAuthenticated = !!(app.session && app.session.user);
         const onIndex = app.current && app.current.get && app.current.get('routeName') === 'index';
-        if (onIndex && hasVisibleWidgetData()) {
-            // Combined call: refresh widget data; auth middleware updates last_seen_at as a side effect.
-            refreshForumData();
+
+        if (isAuthenticated) {
+            if (onIndex && hasVisibleWidgetData()) {
+                // Combined call: refresh widget data; auth middleware updates last_seen_at as a side effect.
+                refreshForumData();
+                return;
+            }
+
+            // Off-index or no widget permissions: pure sparse ping just to bump last_seen_at.
+            app.request({
+                method: 'GET',
+                url: app.forum.attribute('apiUrl') + '/forums',
+                params: { 'fields[forums]': 'id' },
+                background: true,
+                errorHandler: () => {},
+            }).catch((err) => {
+                // 401 means the session is gone — stop firing rather than spam.
+                if (err && err.status === 401) {
+                    heartbeatStopped = true;
+                    if (heartbeatTimer) {
+                        clearInterval(heartbeatTimer);
+                        heartbeatTimer = null;
+                    }
+                }
+            });
             return;
         }
 
-        // Off-index or no widget permissions: pure sparse ping just to bump last_seen_at.
+        // Guest path. Only fires when the admin has opted into guest counting —
+        // `forumStatsShowOnlineGuests` is the master switch and is permission-gated
+        // server-side, so this also auto-disables for guests denied online-users.
+        if (!app.forum.attribute('forumStatsShowOnlineGuests')) return;
+
         app.request({
-            method: 'GET',
-            url: app.forum.attribute('apiUrl') + '/forums',
-            params: { 'fields[forums]': 'id' },
+            method: 'POST',
+            url: app.forum.attribute('apiUrl') + '/forum-widgets/guest-heartbeat',
             background: true,
             errorHandler: () => {},
-        }).catch((err) => {
-            // 401 means the session is gone — stop firing rather than spam.
-            if (err && err.status === 401) {
-                heartbeatStopped = true;
-                if (heartbeatTimer) {
-                    clearInterval(heartbeatTimer);
-                    heartbeatTimer = null;
-                }
-            }
-        });
+        }).catch(() => { /* fuzzy counter — never escalate failures */ });
+
+        // Refresh widget data on the index so the guest count visibly updates
+        // without waiting for a full page reload.
+        if (onIndex && hasVisibleWidgetData()) {
+            refreshForumData();
+        }
     } catch (e) { /* never propagate */ }
 }
 
@@ -102,6 +128,7 @@ class CompactForumWidget extends Component {
         super.oninit(vnode);
         this.expanded = false;
         this.boundDocClick = this.onDocumentClick.bind(this);
+        this.boundDocKeydown = this.onDocumentKeydown.bind(this);
         this.boundVisChange = () => {
             if (document.visibilityState === 'visible') refreshForumData();
         };
@@ -110,12 +137,14 @@ class CompactForumWidget extends Component {
     oncreate(vnode) {
         super.oncreate(vnode);
         document.addEventListener('click', this.boundDocClick);
+        document.addEventListener('keydown', this.boundDocKeydown);
         document.addEventListener('visibilitychange', this.boundVisChange);
     }
 
     onremove(vnode) {
         super.onremove(vnode);
         document.removeEventListener('click', this.boundDocClick);
+        document.removeEventListener('keydown', this.boundDocKeydown);
         document.removeEventListener('visibilitychange', this.boundVisChange);
     }
 
@@ -124,6 +153,16 @@ class CompactForumWidget extends Component {
         if (this.element && this.element.contains(e.target)) return;
         this.expanded = false;
         m.redraw();
+    }
+
+    onDocumentKeydown(e) {
+        if (!this.expanded || e.key !== 'Escape') return;
+        this.expanded = false;
+        m.redraw();
+        // Return focus to the toggle button so SR + keyboard users land back
+        // where they were before opening the panel.
+        const toggle = this.element && this.element.querySelector('.CompactWidget-toggle');
+        if (toggle) toggle.focus();
     }
 
     view() {
@@ -144,6 +183,15 @@ class CompactForumWidget extends Component {
         const totalOnline = canViewOnline ? (app.forum.attribute('totalOnlineUsers') || 0) : 0;
         const hiddenOnline = canViewOnline ? (app.forum.attribute('hiddenOnlineUsers') || 0) : 0;
 
+        // Guest counter: opt-in. `forumStatsShowOnlineGuests` is server-gated by the
+        // viewOnlineUsers permission, so it auto-vanishes for actors denied online
+        // visibility. `displayedOnline` is what the bar shows — depending on the
+        // include-in-total toggle, that's either members-only or members+guests.
+        const showOnlineGuests = canViewOnline && !!app.forum.attribute('forumStatsShowOnlineGuests');
+        const includeGuestsInTotal = showOnlineGuests && !!app.forum.attribute('forumStatsIncludeGuestsInTotal');
+        const onlineGuestsCount = showOnlineGuests ? (app.forum.attribute('onlineGuestsCount') || 0) : 0;
+        const displayedOnline = includeGuestsInTotal ? (totalOnline + onlineGuestsCount) : totalOnline;
+
         const discussionsCount = app.forum.attribute('forumStatsDiscussionsCount');
         const postsCount = app.forum.attribute('forumStatsPostsCount');
         const usersCount = app.forum.attribute('forumStatsUsersCount');
@@ -154,7 +202,7 @@ class CompactForumWidget extends Component {
         } catch (e) {}
 
         const hasAnyStat = discussionsCount != null || postsCount != null || usersCount != null;
-        const hasOnline = canViewOnline && totalOnline > 0;
+        const hasOnline = canViewOnline && displayedOnline > 0;
         const hasAnything = hasOnline || hasAnyStat;
 
         if (!hasAnything) return m('div');
@@ -224,13 +272,20 @@ class CompactForumWidget extends Component {
                 role: 'region',
                 'aria-label': app.translator.trans('ekumanov-forum-widgets.forum.aria.details_panel'),
             }, [
-                canViewOnline && (users.length > 0 || hiddenOnline > 0 || overflowCount > 0)
+                canViewOnline && (users.length > 0 || hiddenOnline > 0 || overflowCount > 0 || onlineGuestsCount > 0)
                     ? m('.CompactWidget-expandedSection', [
-                        m('.CompactWidget-expandedLabel', { id: 'compact-widget-online' }, [
+                        // role/aria-level instead of <h3> avoids inheriting the global <h3>
+                        // typography (large bold text); CSS for .CompactWidget-expandedLabel
+                        // still drives the visual style.
+                        m('.CompactWidget-expandedLabel', {
+                            id: 'compact-widget-online',
+                            role: 'heading',
+                            'aria-level': '3',
+                        }, [
                             m('.CompactWidget-greenDot', { 'aria-hidden': 'true' }),
                             ' ',
                             app.translator.trans('ekumanov-forum-widgets.forum.online_users.title'),
-                            ' (' + totalOnline + ')',
+                            ' (' + displayedOnline + ')',
                         ]),
                         m('.CompactWidget-expandedUsersList', {
                             role: 'list',
@@ -252,7 +307,7 @@ class CompactForumWidget extends Component {
                                     role: 'listitem',
                                     'aria-label': app.translator.trans('ekumanov-forum-widgets.forum.aria.overflow_users', { count: overflowCount }),
                                 }, [
-                                    m('span.CompactWidget-overflowAvatar', { 'aria-hidden': 'true' }, '+' + overflowCount),
+                                    m('span.CompactWidget-overflowAvatar', { 'aria-hidden': 'true' }, '+' + formatNumber(overflowCount)),
                                     m('span.CompactWidget-expandedUsername.CompactWidget-expandedUsername--muted',
                                         app.translator.trans('ekumanov-forum-widgets.forum.online_users.overflow_more')
                                     ),
@@ -263,9 +318,20 @@ class CompactForumWidget extends Component {
                                     role: 'listitem',
                                     'aria-label': hiddenOnline + ' ' + app.translator.trans('ekumanov-forum-widgets.forum.online_users.hidden_users', { count: hiddenOnline }),
                                 }, [
-                                    m('span.CompactWidget-hiddenAvatar', { 'aria-hidden': 'true' }, hiddenOnline),
+                                    m('span.CompactWidget-hiddenAvatar', { 'aria-hidden': 'true' }, formatNumber(hiddenOnline)),
                                     m('span.CompactWidget-expandedUsername.CompactWidget-expandedUsername--muted',
                                         app.translator.trans('ekumanov-forum-widgets.forum.online_users.hidden_users', { count: hiddenOnline })
+                                    ),
+                                ])
+                                : null,
+                            onlineGuestsCount > 0
+                                ? m('.CompactWidget-expandedUser.CompactWidget-expandedUser--guest', {
+                                    role: 'listitem',
+                                    'aria-label': onlineGuestsCount + ' ' + app.translator.trans('ekumanov-forum-widgets.forum.online_users.guests', { count: onlineGuestsCount }),
+                                }, [
+                                    m('span.CompactWidget-guestAvatar', { 'aria-hidden': 'true' }, formatNumber(onlineGuestsCount)),
+                                    m('span.CompactWidget-expandedUsername.CompactWidget-expandedUsername--muted',
+                                        app.translator.trans('ekumanov-forum-widgets.forum.online_users.guests', { count: onlineGuestsCount })
                                     ),
                                 ])
                                 : null,
@@ -303,9 +369,9 @@ class CompactForumWidget extends Component {
         // (everywhere except desktop full-bar mode, where the whole bar is the click target),
         // we wrap the stat in an interactive `.CompactWidget-onlineWrapper` div.
         if (mergeOnlineUsers) {
-            const mergedValue = formatNumber(totalOnline) + '/' + formatNumber(usersCount);
+            const mergedValue = formatNumber(displayedOnline) + '/' + formatNumber(usersCount);
             const accessibleLabel = extractText(app.translator.trans('ekumanov-forum-widgets.forum.stats.label_online_over_total', {
-                online: totalOnline,
+                online: displayedOnline,
                 total: usersCount,
             }));
             const mergedStat = m('span.CompactWidget-stat.CompactWidget-stat--online.CompactWidget-stat--merged', {
@@ -335,7 +401,7 @@ class CompactForumWidget extends Component {
             // inline labels or a hovered bar (mobile + desktop online-cell). Classic keeps the
             // tooltip because icons there have no visible label.
             const noOnlineTooltip = inlineToggle;
-            const onlineStat = buildStat('fa-user', totalOnline, pre + 'tooltip_online', pre + 'label_online', '.CompactWidget-stat--online', noOnlineTooltip);
+            const onlineStat = buildStat('fa-user', displayedOnline, pre + 'tooltip_online', pre + 'label_online', '.CompactWidget-stat--online', noOnlineTooltip);
 
             if (onlineCellClickable) {
                 stats.push(m('.CompactWidget-onlineWrapper', {
@@ -406,6 +472,9 @@ app.initializers.add('ekumanov/forum-widgets', () => {
     Forum.prototype.hiddenOnlineUsers = Model.attribute('hiddenOnlineUsers');
     Forum.prototype.canViewOnlineUsers = Model.attribute('canViewOnlineUsers');
     Forum.prototype.forumStatsEnableHeartbeat = Model.attribute('forumStatsEnableHeartbeat');
+    Forum.prototype.forumStatsShowOnlineGuests = Model.attribute('forumStatsShowOnlineGuests');
+    Forum.prototype.forumStatsIncludeGuestsInTotal = Model.attribute('forumStatsIncludeGuestsInTotal');
+    Forum.prototype.onlineGuestsCount = Model.attribute('onlineGuestsCount');
     Forum.prototype.latestRegisteredUser = Model.hasOne('latestRegisteredUser');
 
     // Helper: read settings lazily (app.forum is not available at initializer time)
@@ -470,4 +539,12 @@ app.initializers.add('ekumanov/forum-widgets', () => {
     document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'visible') fireHeartbeat();
     });
+
+    // Authenticated users have last_seen_at refreshed when the page itself was
+    // served, so they're already counted on first paint. Guests don't get that
+    // free hit — fire one ping on init so they show up immediately rather than
+    // after the first 60s tick.
+    if (!app.session || !app.session.user) {
+        setTimeout(fireHeartbeat, 0);
+    }
 });
