@@ -4,21 +4,11 @@ A compact widget that displays online users, forum statistics (discussions, post
 
 ## Screenshots
 
-| Desktop — Inside toolbar (collapsed) | Desktop — Inside toolbar (expanded) |
+| Desktop — Collapsed | Desktop — Expanded |
 |---|---|
-| ![Collapsed](screenshots/desktop-inside-toolbar-collapsed.png) | ![Expanded](screenshots/desktop-inside-toolbar-expanded.png) |
-
-| Mobile — Above toolbar (collapsed) | Mobile — Above toolbar (expanded) | Mobile — Below toolbar (collapsed) |
-|---|---|---|
-| ![Mobile collapsed](screenshots/mobile-above-toolbar-collapsed.png) | ![Mobile expanded](screenshots/mobile-above-toolbar-expanded.png) | ![Mobile below toolbar](screenshots/mobile-below-toolbar-collapsed.png) |
-
-| Desktop — Above toolbar | Desktop — Below toolbar |
-|---|---|
-| ![Above toolbar](screenshots/desktop-above-toolbar-collapsed.png) | ![Below toolbar](screenshots/desktop-below-toolbar-collapsed.png) |
-
-| Desktop — Classic sidebar | Desktop — Classic sidebar (expanded) |
-|---|---|
-| ![Classic collapsed](screenshots/desktop-classic-collapsed.png) | ![Classic expanded](screenshots/desktop-classic-expanded.png) |
+| ![Desktop collapsed](screenshots/desktop-inside-toolbar-collapsed.png) | ![Desktop expanded](screenshots/desktop-inside-toolbar-expanded.png) |
+| **Mobile — Collapsed** | **Mobile — Expanded** |
+| ![Mobile collapsed](screenshots/mobile-inside-toolbar-collapsed.png) | ![Mobile expanded](screenshots/mobile-inside-toolbar-expanded.png) |
 
 ## Features
 
