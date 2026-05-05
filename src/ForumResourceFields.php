@@ -106,7 +106,7 @@ class ForumResourceFields
             Schema\Boolean::make('forumStatsIncludeGuestsInTotal')
                 ->visible(fn ($model, Context $context) => $context->getActor()->hasPermission('ekumanov-forum-widgets.viewOnlineUsers'))
                 ->get(fn () => $this->isOnlineGuestsEnabled()
-                    && (bool) $this->settings->get('ekumanov-forum-widgets.include_guests_in_total', false)),
+                    && (bool) $this->settings->get('ekumanov-forum-widgets.include_guests_in_total', true)),
 
             Schema\Integer::make('onlineGuestsCount')
                 ->visible(fn ($model, Context $context) => $this->isOnlineGuestsEnabled()
@@ -147,7 +147,7 @@ class ForumResourceFields
     protected function isOnlineGuestsEnabled(): bool
     {
         return $this->isOnlineUsersEnabled()
-            && (bool) $this->settings->get('ekumanov-forum-widgets.show_online_guests', false);
+            && (bool) $this->settings->get('ekumanov-forum-widgets.show_online_guests', true);
     }
 
     /**

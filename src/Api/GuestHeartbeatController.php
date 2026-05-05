@@ -48,7 +48,7 @@ class GuestHeartbeatController implements RequestHandlerInterface
         // older client whose admin just turned the feature off doesn't spam
         // the logs — it just wastes a request until the page is reloaded.
         if (! (bool) $this->settings->get('ekumanov-forum-widgets.show_online_users', true)
-            || ! (bool) $this->settings->get('ekumanov-forum-widgets.show_online_guests', false)) {
+            || ! (bool) $this->settings->get('ekumanov-forum-widgets.show_online_guests', true)) {
             return new EmptyResponse(204);
         }
 

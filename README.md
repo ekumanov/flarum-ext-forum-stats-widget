@@ -72,8 +72,8 @@ Then enable the extension in the admin panel under **Extensions > Forum Stats Wi
 | Last seen interval (minutes) | 5 | How many minutes since last activity to consider a user online (paired with the presence heartbeat default) |
 | Online users cache duration (seconds) | 30 | How long to cache the online users list |
 | Enable presence heartbeat | Enabled | Whether logged-in users with a focused tab send a background ping every minute to keep their last-seen timestamp fresh (and on the forum index, also auto-refresh the widget data). Disable for zero background traffic |
-| Show online guests | Disabled | Master toggle for guest counting. When on, each guest tab pings a small unauthenticated endpoint and the resulting count appears in the expanded panel as a dotted circle. Disabled when **Show online users** is off |
-| Include guests in main online count | Disabled | When on, the bar (and panel section header) sums logged-in members and guests; the breakdown rows still list each component separately. Disabled when either **Show online users** or **Show online guests** is off |
+| Show online guests | Enabled | Master toggle for guest counting. When on, each guest tab pings a small unauthenticated endpoint and the resulting count appears in the expanded panel as a dotted circle. Disabled when **Show online users** is off |
+| Include guests in main online count | Enabled | When on, the bar (and panel section header) sums logged-in members and guests; the breakdown rows still list each component separately. Disabled when either **Show online users** or **Show online guests** is off |
 | Show discussions/posts/users/latest | All enabled | Individual toggles for each statistic |
 | Statistics cache duration (seconds) | 600 | How long to cache discussion/post/user counts and latest registration |
 | Ignore private discussions in count | Disabled | Exclude private discussions from the count |
