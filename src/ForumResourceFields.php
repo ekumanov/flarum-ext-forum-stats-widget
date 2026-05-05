@@ -78,13 +78,14 @@ class ForumResourceFields
                     && (bool) $this->settings->get('ekumanov-forum-widgets.enable_heartbeat', true)),
 
             // === Online Guests ===
-            // Reuses the viewOnlineUsers permission — there's no separate "see guests"
-            // permission since guest presence is part of the same online-users feature.
-
-            // Tells the JS whether to fire guest heartbeats. Suppressed when the actor
-            // can't view online users, so a guest with denied perms doesn't bother pinging.
+            // Reuses the viewOnlineUsers permission for *display* (the count + dotted
+            // row). The heartbeat itself is intentionally NOT permission-gated: a
+            // guest who can't see the widget should still be COUNTED so the admin's
+            // number is accurate. Without this asymmetry, on forums where guests
+            // lack viewOnlineUsers the feature silently no-ops — guests never get
+            // forumStatsShowOnlineGuests in their API payload, so the JS bails and
+            // no heartbeat fires.
             Schema\Boolean::make('forumStatsShowOnlineGuests')
-                ->visible(fn ($model, Context $context) => $context->getActor()->hasPermission('ekumanov-forum-widgets.viewOnlineUsers'))
                 ->get(fn () => $this->isOnlineGuestsEnabled()),
 
             // Whether the bar's main online number should sum members + guests.
