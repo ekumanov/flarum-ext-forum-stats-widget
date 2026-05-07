@@ -37,14 +37,9 @@ A compact widget that displays online users, forum statistics (discussions, post
 
 ```bash
 composer require ekumanov/flarum-ext-forum-widgets
-php flarum migrate
-php flarum assets:publish
-php flarum cache:clear
 ```
 
-Then enable the extension in the admin panel under **Extensions > Forum Stats Widget**.
-
-> **Note:** Since Flarum 2.0 beta 8 (Laravel 13 upgrade), `php flarum assets:publish` is required after every `composer require` / `composer update` of any extension. Skipping it leaves stale compiled assets and can break the forum until the published assets match the running code.
+Then enable the extension in the admin panel under **Extensions > Forum Stats Widget**. Enabling runs the extension's migration and recompiles the frontend assets automatically — no extra `php flarum` commands are needed for a normal install.
 
 ## Configuration
 
@@ -93,14 +88,11 @@ Both caches default to a 30-second TTL. The forum statistics cache (discussions,
 
 ```bash
 composer update ekumanov/flarum-ext-forum-widgets
-php flarum migrate
-php flarum assets:publish
-php flarum cache:clear
 ```
 
 Then hard-refresh the forum in your browser (Cmd+Shift+R on macOS, Ctrl+Shift+R on Windows/Linux) so it picks up the new CSS/JS.
 
-`assets:publish` is required on Flarum 2.0 beta 8 and later — without it, the compiled CSS/JS on disk can fall out of sync with the running PHP and the forum may fail to render.
+This extension ships only its compiled JS/CSS bundles via `Extend\Frontend` — there are no static public assets (fonts, images) to republish, so `php flarum assets:publish` is **not** required for installs or updates of this extension. Flarum recompiles the asset bundles on enable/update automatically. (`assets:publish` is only relevant after a Flarum **core** upgrade that changes its own shipped assets, e.g. the FontAwesome 7 font swap in Flarum 2.0 beta 8.)
 
 If the new version still doesn't appear:
 
