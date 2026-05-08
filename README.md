@@ -92,10 +92,11 @@ composer update ekumanov/flarum-ext-forum-widgets
 
 Then hard-refresh the forum in your browser (Cmd+Shift+R on macOS, Ctrl+Shift+R on Windows/Linux) so it picks up the new CSS/JS.
 
-This extension ships only its compiled JS/CSS bundles via `Extend\Frontend` — there are no static public assets (fonts, images) to republish, so `php flarum assets:publish` is **not** required for installs or updates of this extension. Flarum recompiles the asset bundles on enable/update automatically. (`assets:publish` is only relevant after a Flarum **core** upgrade that changes its own shipped assets, e.g. the FontAwesome 7 font swap in Flarum 2.0 beta 8.)
+> **About `php flarum assets:publish`:** It is **not** required for this extension. The extension has no `/assets/` directory, so Flarum's `Extension::hasAssets()` returns `false` for it and `assets:publish` would publish zero files for this extension regardless. Its frontend lives entirely in `Extend\Frontend(...)->js(...)->css(...)`, which Flarum compiles into the `forum.js`/`forum.css` bundles via the asset manifest in the Laravel cache — invalidating that cache (e.g. `php flarum cache:clear`, or simply re-enabling the extension) is what triggers a fresh bundle. `assets:publish` is only useful after a Flarum **core** upgrade that ships new static assets (e.g. the FontAwesome 7 font swap in Flarum 2.0 beta 8) or when the `flarum-assets` disk needs to be re-synced (e.g. S3/CDN driver, file corruption).
 
-If the new version still doesn't appear:
+If the new version still doesn't appear after a hard refresh:
 
+- Run `php flarum cache:clear` to invalidate the bundle manifest (this is what actually triggers a JS/CSS recompile on the next request).
 - Confirm the new version is installed: `composer show ekumanov/flarum-ext-forum-widgets | grep versions`
 - Check the served cache-buster hash changed: `curl -s https://your-forum/ | grep -oE 'forum\.css\?v=[a-f0-9]+'` — the hash should differ from before the update.
 - If you're behind a CDN (e.g. Cloudflare) and the hash changed but you still see old bytes, purge that URL in your CDN.
