@@ -202,7 +202,7 @@ class CompactForumWidget extends Component {
         } catch (e) {}
 
         const hasAnyStat = discussionsCount != null || postsCount != null || usersCount != null;
-        const hasOnline = canViewOnline && displayedOnline > 0;
+        const hasOnline = canViewOnline;
         const hasAnything = hasOnline || hasAnyStat;
 
         if (!hasAnything) return m('div');
@@ -254,7 +254,7 @@ class CompactForumWidget extends Component {
         };
 
         // Toggle button (shared between inline and bar-end placements)
-        const toggleButton = hasExpandableContent && showToggle
+        const toggleButton = hasExpandableContent && (showToggle || !hasOnline)
             ? m('button.CompactWidget-toggle.Button.Button--icon.Button--link', {
                 onclick: (e) => { e.stopPropagation(); this.expanded = !this.expanded; m.redraw.sync(); },
                 'aria-label': this.expanded
@@ -461,7 +461,8 @@ class CompactForumWidget extends Component {
 
             // Expanded panel at bar level for full-bar desktop and mobile
             // (online-cell desktop renders panel inside the online wrapper above)
-            !isOnlineCellMode ? expandedPanel : null,
+            // Fall back to bar level if there are no online users to anchor to.
+            (!isOnlineCellMode || !hasOnline) ? expandedPanel : null,
         ]);
     }
 }
