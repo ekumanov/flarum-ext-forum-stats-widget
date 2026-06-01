@@ -239,7 +239,8 @@ class ForumResourceFields
     }
 
     /**
-     * Reconstruct User models from cached attributes — zero DB queries on cache hit.
+     * Reconstruct User models from cached attributes — one indexed lookup on a
+     * cache hit (the existence guard below), otherwise zero queries.
      */
     protected function getOnlineUserModels(User $actor): array
     {
@@ -249,13 +250,29 @@ class ForumResourceFields
             return [];
         }
 
-        return array_map(function (array $attributes) {
+        $ids = array_column($data['users'], 'id');
+
+        // Defense-in-depth: drop any cached users whose DB row no longer
+        // exists. A row-less model (exists = true) makes core's loadAggregate()
+        // crash on a null and 500 the entire forum document. The FlushCaches
+        // listener already invalidates this cache on any Eloquent user delete,
+        // so this only ever triggers on a delete that bypassed Eloquent
+        // entirely (raw SQL). One indexed whereIn lookup.
+        $existing = array_flip(User::query()->whereIn('id', $ids)->pluck('id')->all());
+
+        $models = [];
+        foreach ($data['users'] as $attributes) {
+            if (! isset($existing[$attributes['id']])) {
+                continue;
+            }
+
             $user = new User();
             $user->setRawAttributes($attributes, true);
             $user->exists = true;
+            $models[] = $user;
+        }
 
-            return $user;
-        }, $data['users']);
+        return $models;
     }
 
     protected function getStats(): array
@@ -296,7 +313,8 @@ class ForumResourceFields
     }
 
     /**
-     * Reconstruct the latest User model from cached attributes — zero DB queries on cache hit.
+     * Reconstruct the latest User model from cached attributes — one indexed PK
+     * lookup on a cache hit (the existence guard below), otherwise zero queries.
      */
     protected function getLatestUser(): ?User
     {
@@ -304,6 +322,16 @@ class ForumResourceFields
         $attributes = $stats['latest_user'] ?? null;
 
         if (! $attributes) {
+            return null;
+        }
+
+        // Defense-in-depth: a stale cache pointing at a deleted row makes core's
+        // loadAggregate() crash on a null and 500 the entire forum document.
+        // The latest registration is exactly who spam cleanups delete, so this
+        // is the most likely ghost. The FlushCaches listener already invalidates
+        // this cache on any Eloquent user delete, so this only ever triggers on
+        // a delete that bypassed Eloquent entirely (raw SQL). One indexed PK lookup.
+        if (! User::query()->whereKey($attributes['id'])->exists()) {
             return null;
         }
 
