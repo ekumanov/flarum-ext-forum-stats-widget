@@ -47,6 +47,17 @@ return [
     (new Extend\Routes('api'))
         ->post('/forum-widgets/guest-heartbeat', 'forum-widgets.guest-heartbeat', GuestHeartbeatController::class),
 
+    // The guest heartbeat is an unauthenticated, side-effect-free presence ping.
+    // CSRF protection buys nothing here (there is no state for a forged request
+    // to change) and it actively breaks long-open tabs: once the page's baked-in
+    // CSRF token ages past the session lifetime, every ping is rejected with a
+    // 400 and the client keeps retrying each interval. Exempting the route keeps
+    // presence counting working on stale tabs. Declared HERE, alongside the route
+    // it guards, so the behaviour is self-contained and never depends on another
+    // extension being installed.
+    (new Extend\Csrf())
+        ->exemptRoute('forum-widgets.guest-heartbeat'),
+
     (new Extend\Event())
         ->subscribe(Listener\FlushCaches::class),
 ];

@@ -42,17 +42,20 @@ There is no test suite.
 ### Settings
 
 - `show_online_users` (bool) — Master toggle for the online users feature.
-- `max_online_users` (int, default 15) — Max user avatars shown for regular users; overflow shown as "+N more".
-- `max_online_users_privileged` (int, default 40) — Max user avatars shown for privileged users (those with `user.viewLastSeenAt` permission).
 - `last_seen_interval` (int, default 5) — Minutes since last activity to consider online.
 - `online_users_cache_ttl` (int, default 30) — Cache TTL for online users.
+- `enable_heartbeat` (bool, default true) — Whether open, focused tabs send a background presence ping (members keep `last_seen_at` fresh; guests are counted). The guest route is CSRF-exempt in `extend.php` so tabs whose token has aged past the session lifetime don't 400. The client jitters its interval and backs off on repeated failure.
+- `show_online_guests` (bool, default true) — Count unauthenticated visitors via the guest heartbeat endpoint.
+- `include_guests_in_total` (bool, default true) — Sum members + guests in the bar's main online number.
 - `stats_cache_duration` (int, default 600) — Cache TTL for discussion/post/user counts.
 - `ignore_private_discussions` (bool) — Exclude private discussions from count.
 - `widget_position` (int, default -10) — Sidebar priority (lower = further down).
 
+> The number of online-user avatars rendered is a fixed cap (`MAX_DISPLAYED_ONLINE = 500` in `ForumResourceFields.php`), not an admin setting — the old `max_online_users` / `max_online_users_privileged` knobs were removed in v1.6 once user objects became sparsely serialized. Overflow beyond the cap degrades to the "+N more" row.
+
 ### Caching Strategy
 
-- **Online users**: Two separate cache keys (`*.admin` and `*.regular`). The privileged cache (for users with `user.viewLastSeenAt` permission, typically admins/mods) includes users who have hidden their online status and uses its own higher max limit. The regular cache excludes hidden users. TTL defaults to 30 seconds. Caches store full user attributes (zero DB queries on hit). Both caches are flushed on user registration/deletion.
+- **Online users**: Two separate cache keys (`*.admin` and `*.regular`). The privileged cache (for users with `user.viewLastSeenAt` permission, typically admins/mods) includes users who have hidden their online status; the regular cache excludes hidden users (showing only a hidden-count). Both share the same `MAX_DISPLAYED_ONLINE` cap. TTL defaults to 30 seconds. Caches store full user attributes; on a cache hit a single indexed existence check drops any user whose row was deleted out-of-band (the ghost-user guard), otherwise zero DB queries. Both caches are flushed on user registration/deletion, including raw-Eloquent deletes (e.g. spamblock).
 - **Forum stats**: Single cache key. TTL defaults to 600 seconds. Stores discussion/post/user counts and latest user attributes. Cache is flushed on discussion/post creation/deletion and user registration/deletion.
 
 ### Permissions

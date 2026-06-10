@@ -61,17 +61,80 @@ function refreshForumData() {
 // endpoint that records IP+UA fingerprint into a TTL'd presence map. Same tick
 // also refreshes widget data on the index so the guest count updates live.
 const HEARTBEAT_INTERVAL_MS = 60000;
+// Ceiling for the exponential backoff applied after consecutive failures. A
+// heartbeat is a background convenience; if the endpoint is unreachable or
+// rate-limiting us we slow to a ping every few minutes rather than hammering
+// it once a minute indefinitely — the behaviour that, before the route was
+// CSRF-exempt, turned stale-token tabs into a perpetual 400 storm.
+const HEARTBEAT_MAX_BACKOFF_MS = 10 * 60 * 1000;
+
 let heartbeatTimer = null;
 let heartbeatStopped = false;
+let heartbeatFailures = 0;
+let heartbeatInFlight = false;
+
+// Schedule the next tick. Baseline cadence is HEARTBEAT_INTERVAL_MS with ±10%
+// jitter so a burst of tabs opened together (or reconnecting after an outage)
+// don't all ping on the same instant. After consecutive failures the delay
+// grows exponentially up to the cap; the first success resets it.
+function scheduleNextHeartbeat() {
+    if (heartbeatStopped) return;
+    if (heartbeatTimer) {
+        clearTimeout(heartbeatTimer);
+        heartbeatTimer = null;
+    }
+    const base = heartbeatFailures > 0
+        ? Math.min(HEARTBEAT_INTERVAL_MS * Math.pow(2, heartbeatFailures), HEARTBEAT_MAX_BACKOFF_MS)
+        : HEARTBEAT_INTERVAL_MS;
+    const delay = base * (0.9 + Math.random() * 0.2);
+    heartbeatTimer = setTimeout(runHeartbeat, delay);
+}
+
+// Fire one heartbeat, then reschedule once it settles. A real failure (network
+// error, 429, 5xx) grows the backoff; success resets it; a skipped tick (hidden
+// tab, feature off, on-index member) leaves it untouched. The in-flight guard
+// keeps rapid visibility toggling from stacking overlapping requests.
+function runHeartbeat() {
+    if (heartbeatInFlight) return;
+    heartbeatInFlight = true;
+
+    let outcome;
+    try {
+        outcome = fireHeartbeat();
+    } catch (e) {
+        outcome = Promise.resolve('skip');
+    }
+
+    Promise.resolve(outcome)
+        .then(
+            (result) => { if (result !== 'skip') heartbeatFailures = 0; },
+            () => { if (heartbeatFailures < 10) heartbeatFailures++; }
+        )
+        .then(() => {
+            heartbeatInFlight = false;
+            scheduleNextHeartbeat();
+        });
+}
+
+// Ping immediately and reset the schedule (used when a tab returns to the
+// foreground). Clears any pending timer first so only one is ever live.
+function triggerHeartbeatNow() {
+    if (heartbeatTimer) {
+        clearTimeout(heartbeatTimer);
+        heartbeatTimer = null;
+    }
+    runHeartbeat();
+}
 
 function fireHeartbeat() {
-    // Outer try/catch is a safety net: a heartbeat is a background convenience
-    // and must never break the forum, even if app.session/app.forum are in an
-    // unexpected state. Failures are silently swallowed; the next tick retries.
+    // Returns a promise: resolves with 'skip' when no ping was sent, resolves on
+    // success, rejects on a real failure so runHeartbeat can back off. The outer
+    // try/catch is a safety net — a heartbeat must never break the forum even if
+    // app.session/app.forum are in an unexpected state.
     try {
-        if (heartbeatStopped) return;
-        if (document.visibilityState !== 'visible') return;
-        if (!app.forum || !app.forum.attribute('forumStatsEnableHeartbeat')) return;
+        if (heartbeatStopped) return Promise.resolve('skip');
+        if (document.visibilityState !== 'visible') return Promise.resolve('skip');
+        if (!app.forum || !app.forum.attribute('forumStatsEnableHeartbeat')) return Promise.resolve('skip');
 
         const isAuthenticated = !!(app.session && app.session.user);
         const onIndex = app.current && app.current.get && app.current.get('routeName') === 'index';
@@ -80,11 +143,11 @@ function fireHeartbeat() {
             if (onIndex && hasVisibleWidgetData()) {
                 // Combined call: refresh widget data; auth middleware updates last_seen_at as a side effect.
                 refreshForumData();
-                return;
+                return Promise.resolve('skip');
             }
 
             // Off-index or no widget permissions: pure sparse ping just to bump last_seen_at.
-            app.request({
+            return app.request({
                 method: 'GET',
                 url: app.forum.attribute('apiUrl') + '/forums',
                 params: { 'fields[forums]': 'id' },
@@ -95,32 +158,37 @@ function fireHeartbeat() {
                 if (err && err.status === 401) {
                     heartbeatStopped = true;
                     if (heartbeatTimer) {
-                        clearInterval(heartbeatTimer);
+                        clearTimeout(heartbeatTimer);
                         heartbeatTimer = null;
                     }
+                    return 'skip';
                 }
+                throw err;
             });
-            return;
         }
 
         // Guest path. Only fires when the admin has opted into guest counting —
         // `forumStatsShowOnlineGuests` is the master switch and is permission-gated
         // server-side, so this also auto-disables for guests denied online-users.
-        if (!app.forum.attribute('forumStatsShowOnlineGuests')) return;
+        if (!app.forum.attribute('forumStatsShowOnlineGuests')) return Promise.resolve('skip');
 
-        app.request({
+        const ping = app.request({
             method: 'POST',
             url: app.forum.attribute('apiUrl') + '/forum-widgets/guest-heartbeat',
             background: true,
             errorHandler: () => {},
-        }).catch(() => { /* fuzzy counter — never escalate failures */ });
+        });
 
         // Refresh widget data on the index so the guest count visibly updates
         // without waiting for a full page reload.
         if (onIndex && hasVisibleWidgetData()) {
             refreshForumData();
         }
-    } catch (e) { /* never propagate */ }
+
+        return ping;
+    } catch (e) {
+        return Promise.resolve('skip');
+    }
 }
 
 class CompactForumWidget extends Component {
@@ -531,20 +599,24 @@ app.initializers.add('ekumanov/forum-widgets', () => {
         if (app.previous?.type) refreshForumData();
     });
 
-    // Start the presence heartbeat unconditionally — `fireHeartbeat()` does the
-    // per-tick gating (session, visibility, setting). `app.forum` and `app.session`
-    // are not reliably populated at initializer top-level, so any attribute reads
-    // happen inside the timer callback.
-    heartbeatTimer = setInterval(fireHeartbeat, HEARTBEAT_INTERVAL_MS);
+    // Start the presence heartbeat. `fireHeartbeat()` does the per-tick gating
+    // (session, visibility, setting); `scheduleNextHeartbeat()` owns the cadence,
+    // jitter, and failure backoff. `app.forum`/`app.session` aren't reliably
+    // populated at initializer top-level, so attribute reads happen inside the tick.
     document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible') fireHeartbeat();
+        // Returning to a foreground tab: ping now (and reset the schedule) so
+        // presence updates promptly instead of waiting out the timer.
+        if (document.visibilityState === 'visible') triggerHeartbeatNow();
     });
 
     // Authenticated users have last_seen_at refreshed when the page itself was
-    // served, so they're already counted on first paint. Guests don't get that
-    // free hit — fire one ping on init so they show up immediately rather than
-    // after the first 60s tick.
+    // served, so they're already counted on first paint and the first tick can
+    // wait one interval. Guests don't get that free hit — ping once right away
+    // (deferred a tick so app.forum is populated) so they show up immediately
+    // rather than after the first interval.
     if (!app.session || !app.session.user) {
-        setTimeout(fireHeartbeat, 0);
+        setTimeout(triggerHeartbeatNow, 0);
+    } else {
+        scheduleNextHeartbeat();
     }
 });

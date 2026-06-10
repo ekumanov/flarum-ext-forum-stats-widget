@@ -181,6 +181,16 @@ app.initializers.add('ekumanov/forum-widgets', () => {
         const groups = container.querySelectorAll('.Form-group');
         const settingValues = {};
 
+        // Bind a 'change' handler exactly once per control. applyDependencies
+        // re-runs on every ExtensionPage update, so binding must be idempotent —
+        // the previous remove/add pair passed a fresh arrow each call, so
+        // removeEventListener matched nothing and listeners accumulated.
+        const bindOnce = (el) => {
+            if (!el || el.dataset.ekDepsBound) return;
+            el.addEventListener('change', () => applyDependencies(container));
+            el.dataset.ekDepsBound = '1';
+        };
+
         // Collect current values of toggle/select settings
         groups.forEach(group => {
             const checkbox = group.querySelector('input[type="checkbox"]');
@@ -191,18 +201,15 @@ app.initializers.add('ekumanov/forum-widgets', () => {
 
             if (checkbox && labelText.indexOf(app.translator.trans('ekumanov-forum-widgets.admin.settings.show_online_users').toString()) > -1) {
                 settingValues.showOnlineUsers = checkbox.checked;
-                checkbox.removeEventListener('change', () => applyDependencies(container));
-                checkbox.addEventListener('change', () => applyDependencies(container));
+                bindOnce(checkbox);
             }
             if (checkbox && labelText.indexOf(app.translator.trans('ekumanov-forum-widgets.admin.settings.show_online_guests').toString()) > -1) {
                 settingValues.showOnlineGuests = checkbox.checked;
-                checkbox.removeEventListener('change', () => applyDependencies(container));
-                checkbox.addEventListener('change', () => applyDependencies(container));
+                bindOnce(checkbox);
             }
             if (select && labelText.indexOf(app.translator.trans('ekumanov-forum-widgets.admin.settings.widget_layout').toString()) > -1) {
                 settingValues.widgetLayout = select.value;
-                select.removeEventListener('change', () => applyDependencies(container));
-                select.addEventListener('change', () => applyDependencies(container));
+                bindOnce(select);
             }
         });
 
