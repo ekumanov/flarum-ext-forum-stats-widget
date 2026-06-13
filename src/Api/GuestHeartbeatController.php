@@ -38,6 +38,23 @@ class GuestHeartbeatController implements RequestHandlerInterface
     public const CACHE_KEY = 'ekumanov-forum-widgets.online-guests';
 
     /**
+     * Lowercase User-Agent substrings that mark a request as a bot rather than
+     * a human visitor. JS-rendering search crawlers (Googlebot, Bingbot, and
+     * notably YandexRenderResourcesBot) execute the page bundle to render it,
+     * which fires this heartbeat just like a real browser — so without this
+     * gate they get counted as "online guests" and inflate the number the admin
+     * sees. We drop them at the recording step (the only place we can: the bot
+     * has already run the JS by the time it reaches us, so a client-side check
+     * is useless). 'bot'/'crawl'/'spider'/'slurp' cover virtually every named
+     * crawler; the rest catch headless scrapers and scripted clients. None of
+     * these substrings appear in genuine browser User-Agents.
+     */
+    protected const BOT_UA_NEEDLES = [
+        'bot', 'crawl', 'spider', 'slurp', 'headless',
+        'python', 'curl', 'wget', 'okhttp', 'go-http', 'libwww', 'lighthouse',
+    ];
+
+    /**
      * Cloudflare's published edge ranges (https://www.cloudflare.com/ips/).
      * CF-Connecting-IP is only honoured when the request actually arrived from
      * one of these — otherwise that header is whatever the caller chose to send.
@@ -70,6 +87,17 @@ class GuestHeartbeatController implements RequestHandlerInterface
             return new EmptyResponse(204);
         }
 
+        // Don't count bots. Render-capable crawlers run the page JS and so post
+        // this heartbeat exactly like a browser would; left unfiltered they
+        // dominate the guest tally (one render bot crawling from many IPs can
+        // be most of the "online guests"). We still answer 204 so the bot's
+        // own client doesn't treat it as an error and retry. Checked before the
+        // rate limit so bot IPs don't even consume a rate-limit slot.
+        $ua = $request->getHeaderLine('User-Agent');
+        if ($this->looksLikeBot($ua)) {
+            return new EmptyResponse(204);
+        }
+
         $ip = $this->resolveClientIp($request);
 
         // Per-IP rate limit, fixed 60s window. Cheap and memory-bounded
@@ -84,7 +112,6 @@ class GuestHeartbeatController implements RequestHandlerInterface
         // Identifier collapses tabs from the same browser/network into one.
         // Truncated to keep the cached map compact (full SHA-256 is 64 hex
         // chars × thousands of entries adds up).
-        $ua = $request->getHeaderLine('User-Agent');
         $hash = substr(hash('sha256', $ip . '|' . $ua), 0, 16);
 
         $intervalMin = max(1, (int) $this->settings->get('ekumanov-forum-widgets.last_seen_interval', 5));
@@ -115,6 +142,30 @@ class GuestHeartbeatController implements RequestHandlerInterface
         $this->cache->put(self::CACHE_KEY, $guests, $intervalMin * 60 + 60);
 
         return new EmptyResponse(204);
+    }
+
+    /**
+     * True when the User-Agent looks like a crawler or scripted client rather
+     * than a human's browser. A missing UA counts as a bot too: every real
+     * browser sends one, so its absence means a script. Substring match on a
+     * lowercased UA — none of the needles occur in genuine browser UAs, so
+     * false positives are not a practical concern.
+     */
+    protected function looksLikeBot(string $ua): bool
+    {
+        $ua = trim($ua);
+        if ($ua === '') {
+            return true;
+        }
+
+        $ua = strtolower($ua);
+        foreach (self::BOT_UA_NEEDLES as $needle) {
+            if (str_contains($ua, $needle)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
