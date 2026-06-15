@@ -192,7 +192,13 @@ class ForumResourceFields
         $maxUsers = self::MAX_DISPLAYED_ONLINE;
 
         $data = $this->cache->remember($cacheKey, $ttl, function () use ($canSeeHidden, $interval, $maxUsers) {
+            // Only consider users who have confirmed their email. An unconfirmed
+            // registration is provisional (often spam or abandoned), so it should
+            // not surface as an online user — mirrors the user-count / latest-
+            // registration gate in buildStats(). Applies to both the count and
+            // the rendered avatar list since both branches clone this query.
             $allOnlineQuery = User::query()
+                ->where('is_email_confirmed', true)
                 ->where('last_seen_at', '>', Carbon::now()->subMinutes($interval));
 
             $totalAll = (clone $allOnlineQuery)->count();
