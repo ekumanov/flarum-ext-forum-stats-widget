@@ -151,9 +151,12 @@ class ForumResourceFields
     }
 
     /**
-     * Counts entries in the guest presence map whose timestamp is still within
-     * the configured window. The map is the same one the heartbeat writes to —
-     * this is just a reader. No DB queries; pure cache hit on every read.
+     * Counts entries in the guest presence map that are still within the
+     * configured window AND have sent at least MIN_PINGS_TO_COUNT heartbeats.
+     * The second condition is what keeps one-shot scrapers out of the tally:
+     * they render once and never return, while a real visitor re-pings every
+     * minute. The map is the same one the heartbeat writes to — this is just a
+     * reader. No DB queries; pure cache hit on every read.
      */
     protected function getOnlineGuestsCount(): int
     {
@@ -166,8 +169,14 @@ class ForumResourceFields
         $cutoff = time() - $intervalMin * 60;
 
         $count = 0;
-        foreach ($guests as $ts) {
-            if ($ts > $cutoff) {
+        foreach ($guests as $entry) {
+            $normalized = GuestHeartbeatController::normalizeEntry($entry);
+            if ($normalized === null) {
+                continue;
+            }
+
+            [$ts, $pings] = $normalized;
+            if ($ts > $cutoff && $pings >= GuestHeartbeatController::MIN_PINGS_TO_COUNT) {
                 $count++;
             }
         }

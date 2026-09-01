@@ -35,6 +35,41 @@ class GuestHeartbeatController implements RequestHandlerInterface
      */
     public const RATE_LIMIT_PER_MIN = 6;
 
+    /**
+     * How many heartbeats a fingerprint must send before it counts as a guest.
+     *
+     * Real visitors ping once a minute for as long as the tab is open, so they
+     * clear this on their second beat. Scrapers overwhelmingly do not: they
+     * render the page once, fire a single heartbeat and never come back —
+     * which, against a 5-minute window, parked each of them in the tally for a
+     * full five minutes. Measured on a live forum 2026-09-01, that single
+     * effect was the whole distance between a displayed 70 and the ~5 people
+     * actually reading.
+     *
+     * This is deliberately behavioural rather than another User-Agent or
+     * IP/ASN heuristic. Both of those we have tried and lost: the current
+     * fleet arrives from residential proxies wearing a byte-identical and
+     * entirely genuine-looking desktop Chrome UA, so nothing about any single
+     * request separates it from a real visitor. Coming back a minute later
+     * does, and no amount of header spoofing fakes persistence.
+     *
+     * Cost: a guest is uncounted for their first ~60s, and one who leaves
+     * inside a minute is never counted at all. For a number captioned "online
+     * now", declining to count someone who has already left is arguably the
+     * more honest answer.
+     */
+    public const MIN_PINGS_TO_COUNT = 2;
+
+    /**
+     * Shortest User-Agent we accept as a real browser. Genuine UAs run to
+     * 50-150 characters; the scripted clients that reach this route send
+     * things like the literal string "pc", which matches none of the needles
+     * below and so used to be counted as a person. Nothing legitimate comes
+     * anywhere near this short, and a UA-spoofing human is merely uncounted
+     * rather than blocked, so the check costs nothing.
+     */
+    public const MIN_UA_LENGTH = 20;
+
     public const CACHE_KEY = 'ekumanov-forum-widgets.online-guests';
 
     /**
@@ -118,24 +153,37 @@ class GuestHeartbeatController implements RequestHandlerInterface
         $now = time();
         $cutoff = $now - $intervalMin * 60;
 
-        // Single-key hashmap of {hash → lastSeenTs}. Race-y under contention
-        // (two concurrent writers can lose each other's update) but for a
-        // fuzzy counter, an occasional dropped tick is acceptable.
+        // Single-key hashmap of {hash → [lastSeenTs, pingCount]}. Race-y under
+        // contention (two concurrent writers can lose each other's update) but
+        // for a fuzzy counter, an occasional dropped tick is acceptable.
         $guests = $this->cache->get(self::CACHE_KEY, []);
         if (! is_array($guests)) {
             $guests = [];
         }
 
-        // Inline prune keeps the map bounded in steady state.
-        $guests = array_filter($guests, fn ($ts) => $ts > $cutoff);
+        // Inline prune keeps the map bounded in steady state. Entries written
+        // by an older release are bare timestamps, and normalizeEntry() reads
+        // both shapes, so upgrading doesn't require flushing a live map.
+        $pruned = [];
+        foreach ($guests as $key => $entry) {
+            $normalized = self::normalizeEntry($entry);
+            if ($normalized !== null && $normalized[0] > $cutoff) {
+                $pruned[$key] = $normalized;
+            }
+        }
+        $guests = $pruned;
 
         // Hard cap: when full and the entry is new, evict the oldest. When
         // updating an existing entry, the count stays put so no eviction.
         if (! isset($guests[$hash]) && count($guests) >= self::MAX_ENTRIES) {
-            asort($guests, SORT_NUMERIC);
+            uasort($guests, fn ($a, $b) => $a[0] <=> $b[0]);
             $guests = array_slice($guests, 1, null, true);
         }
-        $guests[$hash] = $now;
+
+        // Bump the ping tally, capped at the threshold: beyond it the exact
+        // number tells us nothing and would only bloat the serialized map.
+        $pings = $guests[$hash][1] ?? 0;
+        $guests[$hash] = [$now, min($pings + 1, self::MIN_PINGS_TO_COUNT)];
 
         // Wrapping TTL = window + small grace. After this, the whole map
         // can be evicted; the next heartbeat rebuilds it from scratch.
@@ -146,15 +194,16 @@ class GuestHeartbeatController implements RequestHandlerInterface
 
     /**
      * True when the User-Agent looks like a crawler or scripted client rather
-     * than a human's browser. A missing UA counts as a bot too: every real
-     * browser sends one, so its absence means a script. Substring match on a
-     * lowercased UA — none of the needles occur in genuine browser UAs, so
-     * false positives are not a practical concern.
+     * than a human's browser. An absent or implausibly short UA counts as a
+     * bot: every real browser sends a long one, so anything under
+     * MIN_UA_LENGTH (the empty string included) means a script. Otherwise a
+     * substring match on a lowercased UA — none of the needles occur in
+     * genuine browser UAs, so false positives are not a practical concern.
      */
     protected function looksLikeBot(string $ua): bool
     {
         $ua = trim($ua);
-        if ($ua === '') {
+        if (strlen($ua) < self::MIN_UA_LENGTH) {
             return true;
         }
 
@@ -166,6 +215,32 @@ class GuestHeartbeatController implements RequestHandlerInterface
         }
 
         return false;
+    }
+
+    /**
+     * Read one guest-map entry in either the current [timestamp, pings] shape
+     * or the bare timestamp written before this release, so an upgrade or a
+     * rollback degrades gracefully instead of miscounting a live map. A legacy
+     * entry reports a single ping, so it simply waits for its next heartbeat
+     * before it counts — the map self-corrects within a minute.
+     *
+     * @return array{0: int, 1: int}|null Null when the entry is unusable.
+     */
+    public static function normalizeEntry(mixed $entry): ?array
+    {
+        if (is_array($entry)) {
+            if (! isset($entry[0]) || ! is_numeric($entry[0])) {
+                return null;
+            }
+
+            return [(int) $entry[0], max(1, (int) ($entry[1] ?? 1))];
+        }
+
+        if (is_numeric($entry)) {
+            return [(int) $entry, 1];
+        }
+
+        return null;
     }
 
     /**
