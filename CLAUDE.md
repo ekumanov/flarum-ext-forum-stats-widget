@@ -23,7 +23,23 @@ npm run dev     # development build with watch mode
 
 Always use `npm ci` (not `npm install`) to install dependencies.
 
-There is no test suite.
+### Tests
+
+There is no PHPUnit setup and deliberately no Composer dev dependencies. The one
+executable check is a standalone harness for the guest presence counter:
+
+```bash
+php tests/guest-heartbeat.php   # exit 0 = pass
+```
+
+It stubs the few PSR/Flarum/Laminas interfaces the controller touches and then
+loads the real `src/Api/GuestHeartbeatController.php`, so it exercises shipped
+code rather than a copy. Run it after touching the heartbeat controller or
+`getOnlineGuestsCount()` — the counting rules break silently, and a wrong guest
+number still looks like a number in production.
+
+Note `displayedCount()` in the harness mirrors `ForumResourceFields::getOnlineGuestsCount()`
+by hand; if the counting rule changes, change both.
 
 ## Architecture
 
