@@ -135,14 +135,33 @@ class GuestHeartbeatController implements RequestHandlerInterface
 
         $ip = $this->resolveClientIp($request);
 
-        // Per-IP rate limit, fixed 60s window. Cheap and memory-bounded
-        // (one cache entry per active IP, all expire after 60s).
+        // Per-IP rate limit, fixed 60s window. Cheap and memory-bounded (one
+        // cache entry per active IP, each expiring 60s after the window opened).
+        //
+        // add() creates the counter with its TTL only if it is absent, and
+        // increment() bumps it in place without touching that TTL — so the
+        // window really is fixed. The previous get()+put() re-armed the 60s on
+        // every ping, turning it into a window that never closed for as long as
+        // pings kept arriving less than a minute apart: an ordinary guest (one
+        // ping a minute, ±10% jitter) crept up to the limit within minutes and
+        // then got 429s, and a NAT full of them sooner. It was also racy —
+        // concurrent requests could read the same count. On Redis both calls
+        // are single atomic commands (SET NX EX via a Lua script, then INCRBY).
         $rlKey = 'ekumanov-forum-widgets.guest-rl.' . hash('sha256', $ip);
-        $count = (int) $this->cache->get($rlKey, 0);
-        if ($count >= self::RATE_LIMIT_PER_MIN) {
+        $opened = $this->cache->add($rlKey, 0, 60);
+        $count = (int) $this->cache->increment($rlKey);
+
+        // The one gap: add() saw the key alive, it expired, and increment()
+        // then recreated it with no TTL at all (INCRBY on a missing key does
+        // that). Left alone that counter would never expire and would lock the
+        // IP out for good, so give it the window it should have had.
+        if (! $opened && $count === 1) {
+            $this->cache->put($rlKey, 1, 60);
+        }
+
+        if ($count > self::RATE_LIMIT_PER_MIN) {
             return new EmptyResponse(429);
         }
-        $this->cache->put($rlKey, $count + 1, 60);
 
         // Identifier collapses tabs from the same browser/network into one.
         // Truncated to keep the cached map compact (full SHA-256 is 64 hex
@@ -255,9 +274,14 @@ class GuestHeartbeatController implements RequestHandlerInterface
      *   1. Peer is a Cloudflare edge → CF-Connecting-IP is the genuine visitor.
      *      (When a front nginx rewrites REMOTE_ADDR via real_ip this branch is
      *      simply skipped and REMOTE_ADDR already holds the visitor — same result.)
-     *   2. Peer is private/loopback → a local reverse proxy; its X-Forwarded-For
-     *      first hop is the client. A direct public attacker has a public
-     *      REMOTE_ADDR and never reaches this branch.
+     *   2. Peer is private/loopback → a local reverse proxy. Take the
+     *      rightmost public address in X-Forwarded-For: each proxy appends the
+     *      peer it saw, so that is the hop our own proxy chain recorded, while
+     *      everything to its left came from the client and can be anything —
+     *      trusting the first hop let a caller mint a fresh identity per
+     *      request just by sending the header. Private hops to the right are
+     *      further proxies of ours and are skipped. A direct public attacker
+     *      has a public REMOTE_ADDR and never reaches this branch.
      *   3. Otherwise the peer IS the client — use REMOTE_ADDR, never a header.
      */
     protected function resolveClientIp(ServerRequestInterface $request): string
@@ -272,11 +296,10 @@ class GuestHeartbeatController implements RequestHandlerInterface
         }
 
         if ($remote !== '' && $this->isPrivateOrReserved($remote)) {
-            $xff = $request->getHeaderLine('X-Forwarded-For');
-            if ($xff !== '') {
-                $first = trim(explode(',', $xff)[0]);
-                if ($first !== '') {
-                    return $first;
+            $hops = array_reverse(array_map('trim', explode(',', $request->getHeaderLine('X-Forwarded-For'))));
+            foreach ($hops as $hop) {
+                if (filter_var($hop, FILTER_VALIDATE_IP) !== false && ! $this->isPrivateOrReserved($hop)) {
+                    return $hop;
                 }
             }
         }

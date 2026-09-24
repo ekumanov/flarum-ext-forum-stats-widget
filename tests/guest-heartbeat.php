@@ -42,15 +42,49 @@ namespace Illuminate\Contracts\Cache {
     interface Repository {
         public function get($key, $default = null);
         public function put($key, $value, $ttl = null);
+        public function add($key, $value, $ttl = null);
+        public function increment($key, $value = 1);
     }
 }
 
 namespace Test {
-    /** In-memory stand-in for the Flarum cache; the map lives in $store. */
+    /**
+     * In-memory stand-in for the Flarum cache; the map lives in $store.
+     *
+     * TTLs are honoured against a virtual clock ($clock, in seconds) so the
+     * rate-limit window can be tested without sleeping. add() and increment()
+     * follow Redis semantics, which is what production runs on: add() is
+     * SET NX EX, and increment() is INCRBY — it keeps an existing TTL, and on
+     * a missing key creates one with no TTL at all.
+     */
     class FakeCache implements \Illuminate\Contracts\Cache\Repository {
         public array $store = [];
-        public function get($key, $default = null) { return $this->store[$key] ?? $default; }
-        public function put($key, $value, $ttl = null) { $this->store[$key] = $value; return true; }
+        public array $expires = [];
+        public int $clock = 0;
+        /** Runs between add() and increment(), to force the expiry race. */
+        public ?\Closure $afterAdd = null;
+
+        private function alive($key): bool {
+            if (isset($this->expires[$key]) && $this->expires[$key] <= $this->clock) {
+                unset($this->store[$key], $this->expires[$key]);
+            }
+            return array_key_exists($key, $this->store);
+        }
+        public function get($key, $default = null) { return $this->alive($key) ? $this->store[$key] : $default; }
+        public function put($key, $value, $ttl = null) {
+            $this->store[$key] = $value;
+            if ($ttl === null) { unset($this->expires[$key]); } else { $this->expires[$key] = $this->clock + $ttl; }
+            return true;
+        }
+        public function add($key, $value, $ttl = null) {
+            $added = ! $this->alive($key) && $this->put($key, $value, $ttl);
+            if ($this->afterAdd) { ($this->afterAdd)($key); }
+            return $added;
+        }
+        public function increment($key, $value = 1) {
+            if (! $this->alive($key)) { $this->store[$key] = 0; unset($this->expires[$key]); }
+            return $this->store[$key] += $value;
+        }
     }
 
     class FakeSettings implements \Flarum\Settings\SettingsRepositoryInterface {
@@ -73,6 +107,7 @@ namespace Ekumanov\ForumWidgets\Api {
     /** Exposes the protected bot check for assertion. */
     class Probe extends GuestHeartbeatController {
         public function isBot(string $ua): bool { return $this->looksLikeBot($ua); }
+        public function clientIp(\Psr\Http\Message\ServerRequestInterface $r): string { return $this->resolveClientIp($r); }
     }
 }
 
@@ -202,6 +237,65 @@ namespace Test {
         $codes[] = $ctl3->handle(new FakeRequest($realUA, '198.51.100.77'))->getStatusCode();
     }
     check('six accepted, then 429', $codes, [204, 204, 204, 204, 204, 204, 429, 429, 429]);
+
+    echo "\n=== 6. the rate-limit window is fixed, not rolling ===\n";
+    // One guest pinging every 55s — the fast edge of the client's 60s ±10%
+    // jitter — for twenty minutes. A window that re-arms on every ping never
+    // closes here, so the count only climbs and the 7th ping onward is
+    // refused; a fixed window holds at most two of these pings at a time.
+    $cache4 = new FakeCache();
+    $ctl4 = new C($cache4, $settings);
+    $codes = [];
+    for ($i = 0; $i < 22; $i++) {
+        $cache4->clock = $i * 55;
+        $codes[] = $ctl4->handle(new FakeRequest($realUA, '198.51.100.78'))->getStatusCode();
+    }
+    check('a steady 55s pinger is never throttled', array_unique($codes), [204]);
+
+    // The window really closes: a burst is refused, then served again 60s
+    // after the window opened even though the burst kept hitting it.
+    $cache5 = new FakeCache();
+    $ctl5 = new C($cache5, $settings);
+    $codes = [];
+    foreach ([0, 1, 2, 3, 4, 5, 6, 30, 59, 60] as $t) {
+        $cache5->clock = $t;
+        $codes[] = $ctl5->handle(new FakeRequest($realUA, '198.51.100.79'))->getStatusCode();
+    }
+    check('burst refused within the window, served once it closes', $codes,
+        [204, 204, 204, 204, 204, 204, 429, 429, 429, 204]);
+
+    // The expiry race: the counter is alive when add() looks and gone by the
+    // time increment() runs, which recreates it with no TTL. It must get one
+    // back, or that IP stays locked out forever.
+    $cache6 = new FakeCache();
+    $ctl6 = new C($cache6, $settings);
+    $ctl6->handle(new FakeRequest($realUA, '198.51.100.80'));
+    $cache6->afterAdd = function ($key) use ($cache6) {
+        if (str_contains($key, 'guest-rl')) {
+            unset($cache6->store[$key], $cache6->expires[$key]);
+        }
+    };
+    $cache6->clock = 10;
+    $ctl6->handle(new FakeRequest($realUA, '198.51.100.80'));
+    $rl = array_values(array_filter(array_keys($cache6->store), fn ($k) => str_contains($k, 'guest-rl')));
+    check('counter recreated by the race gets its TTL back', isset($cache6->expires[$rl[0]]), true);
+
+    echo "\n=== 7. X-Forwarded-For behind a private proxy ===\n";
+    $ipOf = function (string $remote, string $xff): string {
+        $req = new class ($remote, $xff) implements \Psr\Http\Message\ServerRequestInterface {
+            public function __construct(private string $remote, private string $xff) {}
+            public function getHeaderLine(string $n): string { return strtolower($n) === 'x-forwarded-for' ? $this->xff : ''; }
+            public function getServerParams(): array { return ['REMOTE_ADDR' => $this->remote]; }
+        };
+        return (new Probe(new FakeCache(), new FakeSettings()))->clientIp($req);
+    };
+    check('spoofed first hop ignored, proxy-recorded hop used',
+        $ipOf('10.0.0.2', '1.2.3.4, 203.0.113.9'), '203.0.113.9');
+    check('private hops on the right are skipped',
+        $ipOf('10.0.0.2', '203.0.113.9, 10.0.0.5'), '203.0.113.9');
+    check('single hop still works', $ipOf('127.0.0.1', '203.0.113.9'), '203.0.113.9');
+    check('garbage / all-private falls back to the peer', $ipOf('10.0.0.2', 'nonsense, 192.168.1.1'), '10.0.0.2');
+    check('a public peer never trusts the header', $ipOf('198.51.100.1', '203.0.113.9'), '198.51.100.1');
 
     printf("\n%d passed, %d failed\n\n", $pass, $fail);
     exit($fail === 0 ? 0 : 1);
