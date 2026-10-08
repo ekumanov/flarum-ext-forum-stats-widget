@@ -50,7 +50,7 @@
     align-items: center;
     justify-content: center;
     gap: 3px;
-    font-size: 11px;
+    font-size: 12px;
     color: var(--muted-more-color, #999);
     cursor: default;
     white-space: nowrap;
@@ -63,9 +63,20 @@
 }
 
 .CompactWidget-stat i {
-    font-size: 10px;
+    font-size: 11px;
     opacity: 0.6;
     flex-shrink: 0;
+}
+
+/* Desktop: match Flarum's 13px body text. Mobile stays at 12px — its bar shares
+   a narrow toolbar row with other buttons, and 13px truncates the counts on a
+   375px phone where 12px still fits. */
+.CompactWidget--desktop .CompactWidget-stat {
+    font-size: 13px;
+}
+
+.CompactWidget--desktop .CompactWidget-stat i {
+    font-size: 12px;
 }
 
 /* Online users stat — green icon */
@@ -118,6 +129,21 @@
 .CompactWidget--inToolbar .CompactWidget-bar {
     min-height: 0;
     padding: 9px 13px;
+}
+
+/* The desktop bar's 13px text would make it taller than the 36px toolbar
+   button beside it; pin the line box to the button's 20px and trim padding. */
+.CompactWidget--inToolbar.CompactWidget--desktop .CompactWidget-bar {
+    padding: 7px 13px;
+}
+
+.CompactWidget--inToolbar.CompactWidget--desktop .CompactWidget-stat {
+    line-height: 20px;
+}
+
+/* Same for mobile: 12px text at the default line-height would add 1.5px. */
+.CompactWidget--inToolbar.CompactWidget--mobile .CompactWidget-stat {
+    line-height: 16px;
 }
 
 /* Merged online/total stat on mobile inside-toolbar: force cursor to match the
@@ -243,6 +269,10 @@
     transition: background 0.1s;
 }
 
+.CompactWidget--desktop .CompactWidget-expandedUser {
+    font-size: 13px;
+}
+
 .CompactWidget-expandedUser:hover {
     background: var(--control-bg, rgba(0, 0, 0, 0.04));
     text-decoration: none;
@@ -300,6 +330,10 @@
     color: var(--muted-color, #aab2bd);
     font-style: italic;
     font-size: 11px;
+}
+
+.CompactWidget--desktop .CompactWidget-expandedUsername--muted {
+    font-size: 12px;
 }
 
 /* Count badges (overflow / hidden / guest). All three share the same shape +
