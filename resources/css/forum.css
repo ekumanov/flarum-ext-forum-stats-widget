@@ -254,7 +254,7 @@
 /* Scrollable online users list. Sized to the viewport like core's dropdowns
    (which use 70vh) but at half — the panel opens a third of the way down and
    has the latest-registration section below it. dvh excludes mobile browser
-   chrome; the vh line is the fallback. 400px ≈ 15 desktop rows, and a
+   chrome; the vh line is the fallback. 400px ≈ 11 rows, and a
    viewport-relative cap rarely lands on a row boundary, so a cut-off row
    hints that the list scrolls. */
 .CompactWidget-expandedUsersList {
@@ -268,28 +268,19 @@
     -webkit-overflow-scrolling: touch;
 }
 
+/* 36px rows at 13px, the same as core's Dropdown-menu items, so the panel
+   matches every other menu in the forum — and on mobile each profile link is
+   a comfortable tap target. */
 .CompactWidget-expandedUser {
     display: flex;
     align-items: center;
     gap: 6px;
-    font-size: 12px;
+    font-size: 13px;
     text-decoration: none;
     color: var(--text-color, inherit);
-    padding: 3px 4px;
+    padding: 8px 4px;
     border-radius: 4px;
     transition: background 0.1s;
-}
-
-.CompactWidget--desktop .CompactWidget-expandedUser {
-    font-size: 13px;
-}
-
-/* Mobile: same 13px text, and ~36px rows — each row is a profile link, and
-   26px rows packed edge to edge are easy to mis-tap. */
-.CompactWidget--mobile .CompactWidget-expandedUser {
-    font-size: 13px;
-    padding-top: 8px;
-    padding-bottom: 8px;
 }
 
 .CompactWidget-expandedUser:hover {
@@ -320,10 +311,6 @@
 .CompactWidget-expandedUser--summary + .CompactWidget-expandedUser--summary {
     border-top: none;
     margin-top: 0;
-    padding-top: 3px;
-}
-
-.CompactWidget--mobile .CompactWidget-expandedUser--summary + .CompactWidget-expandedUser--summary {
     padding-top: 8px;
 }
 
@@ -349,15 +336,11 @@
     min-width: 0;
 }
 
+/* Same size as the names: muted color, italics and the dotted/dashed badges
+   already mark these rows as summaries — a 1px smaller size reads as a slip. */
 .CompactWidget-expandedUsername--muted {
     color: var(--muted-color, #aab2bd);
     font-style: italic;
-    font-size: 11px;
-}
-
-.CompactWidget--desktop .CompactWidget-expandedUsername--muted,
-.CompactWidget--mobile .CompactWidget-expandedUsername--muted {
-    font-size: 12px;
 }
 
 /* Count badges (overflow / hidden / guest). All three share the same shape +
