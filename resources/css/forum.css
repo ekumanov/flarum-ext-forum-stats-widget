@@ -50,7 +50,8 @@
     align-items: center;
     justify-content: center;
     gap: 3px;
-    font-size: 12px;
+    /* --cw-stat-size is set by fitStats() on mobile when a count would truncate */
+    font-size: var(--cw-stat-size, 12px);
     color: var(--muted-more-color, #999);
     cursor: default;
     white-space: nowrap;
@@ -63,7 +64,7 @@
 }
 
 .CompactWidget-stat i {
-    font-size: 11px;
+    font-size: calc(var(--cw-stat-size, 12px) - 1px);
     opacity: 0.6;
     flex-shrink: 0;
 }
@@ -425,6 +426,26 @@
 
     .CompactWidget-stats {
         grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+    }
+
+    /* Inside the toolbar every pixel counts: size cells to their content and
+       share the leftover space, rather than giving a short count like "2,401"
+       the same width as the longest one. fitStats() shrinks the text if even
+       that is not enough. */
+    /* ...and let the bar shrink below that content width (the flex cells
+       would otherwise set a min-content width and wrap the toolbar row). */
+    .CompactWidget--inToolbar.CompactWidget--mobile {
+        min-width: 0;
+    }
+
+    .CompactWidget--inToolbar .CompactWidget-stats {
+        display: flex;
+        justify-content: space-evenly;
+    }
+
+    .CompactWidget--inToolbar .CompactWidget-stats > * {
+        flex: 0 1 auto;
+        min-width: 0;
     }
 }
 

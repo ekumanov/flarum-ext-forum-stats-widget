@@ -191,6 +191,15 @@ function fireHeartbeat() {
     }
 }
 
+// "58K", "1.2M" — locale-aware, used on mobile only when full numbers can't fit.
+function compactNumber(n) {
+    try {
+        return new Intl.NumberFormat(app.data.locale, { notation: 'compact', maximumFractionDigits: 1 }).format(n);
+    } catch (e) {
+        return formatNumber(n);
+    }
+}
+
 class CompactForumWidget extends Component {
     oninit(vnode) {
         super.oninit(vnode);
@@ -207,6 +216,22 @@ class CompactForumWidget extends Component {
         document.addEventListener('click', this.boundDocClick);
         document.addEventListener('keydown', this.boundDocKeydown);
         document.addEventListener('visibilitychange', this.boundVisChange);
+
+        if (this.attrs.viewport === 'mobile') {
+            this.fitKey = null;
+            this.fitStats();
+            const bar = this.element.querySelector('.CompactWidget-bar');
+            if (bar && typeof ResizeObserver !== 'undefined') {
+                this.resizeObserver = new ResizeObserver(() => this.fitStats());
+                this.resizeObserver.observe(bar);
+            }
+            if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { this.fitKey = null; this.fitStats(); });
+        }
+    }
+
+    onupdate(vnode) {
+        super.onupdate(vnode);
+        if (this.attrs.viewport === 'mobile') this.fitStats();
     }
 
     onremove(vnode) {
@@ -214,6 +239,51 @@ class CompactForumWidget extends Component {
         document.removeEventListener('click', this.boundDocClick);
         document.removeEventListener('keydown', this.boundDocKeydown);
         document.removeEventListener('visibilitychange', this.boundVisChange);
+        if (this.resizeObserver) this.resizeObserver.disconnect();
+    }
+
+    /**
+     * Mobile bar: fit the counts instead of truncating them with an ellipsis.
+     * Full numbers shrink in half-pixel steps from 12px to 11px; if they still
+     * don't fit, the bar switches to compact numbers ("58K") — bigger text is
+     * preferred over every digit — which may shrink further, down to 10px.
+     * Only if even those don't fit does the CSS ellipsis remain.
+     */
+    fitStats() {
+        const el = this.element;
+        const bar = el && el.querySelector('.CompactWidget-bar');
+        // Hidden instance (display:none at this breakpoint) measures 0 wide — nothing to fit.
+        if (!bar || bar.clientWidth === 0) return;
+
+        // A wider bar (rotation, a sibling button gone) may fit full numbers again.
+        const width = bar.clientWidth;
+        if (this.compactNumbers && width > this.fitWidth) {
+            this.fitWidth = width;
+            this.compactNumbers = false;
+            m.redraw();
+            return;
+        }
+        this.fitWidth = width;
+
+        const spans = Array.from(el.querySelectorAll('.CompactWidget-stat > span'));
+        const key = width + '|' + spans.map((s) => s.textContent).join('|');
+        if (key === this.fitKey) return;
+        this.fitKey = key;
+
+        const overflows = () => spans.some((s) => s.scrollWidth > s.clientWidth);
+
+        el.style.removeProperty('--cw-stat-size');
+        const floor = this.compactNumbers ? 10 : 11;
+        for (let size = 11.5; size >= floor && overflows(); size -= 0.5) {
+            el.style.setProperty('--cw-stat-size', size + 'px');
+        }
+
+        // Full numbers still truncating at 11px: switch to "58K"-style numbers and fit
+        // again on the next redraw (the text change gives it a new key).
+        if (overflows() && !this.compactNumbers) {
+            this.compactNumbers = true;
+            m.redraw();
+        }
     }
 
     onDocumentClick(e) {
@@ -300,6 +370,9 @@ class CompactForumWidget extends Component {
 
         const pre = 'ekumanov-forum-widgets.forum.stats.';
 
+        // Visible bar values only; aria-labels and tooltips keep the full number.
+        const displayNumber = (n) => (isMobile && this.compactNumbers ? compactNumber(n) : formatNumber(n));
+
         // buildStat: creates a stat element with optional tooltip.
         // Tooltips are shown on classic-sidebar desktop and mobile; never in full-width desktop
         // (which has inline labels or tappable cells instead).
@@ -315,7 +388,7 @@ class CompactForumWidget extends Component {
                 role: 'text',
             }, [
                 m('i.fa-solid.' + icon, { 'aria-hidden': 'true' }),
-                m('span', formatNumber(value)),
+                m('span', displayNumber(value)),
                 isFullWidth ? m('span.CompactWidget-statLabel', inlineLabel) : null,
             ]);
             return useTooltip ? m(Tooltip, { text: tooltipText }, statEl) : statEl;
@@ -437,7 +510,7 @@ class CompactForumWidget extends Component {
         // (everywhere except desktop full-bar mode, where the whole bar is the click target),
         // we wrap the stat in an interactive `.CompactWidget-onlineWrapper` div.
         if (mergeOnlineUsers) {
-            const mergedValue = formatNumber(displayedOnline) + '/' + formatNumber(usersCount);
+            const mergedValue = displayNumber(displayedOnline) + '/' + displayNumber(usersCount);
             const accessibleLabel = extractText(app.translator.trans('ekumanov-forum-widgets.forum.stats.label_online_over_total', {
                 online: displayedOnline,
                 total: usersCount,
