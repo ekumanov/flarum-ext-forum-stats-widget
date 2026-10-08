@@ -251,10 +251,20 @@
     flex-shrink: 0;
 }
 
-/* Scrollable online users list */
+/* Scrollable online users list. Sized to the viewport like core's dropdowns
+   (which use 70vh) but at half — the panel opens a third of the way down and
+   has the latest-registration section below it. dvh excludes mobile browser
+   chrome; the vh line is the fallback. 400px ≈ 15 desktop rows, and a
+   viewport-relative cap rarely lands on a row boundary, so a cut-off row
+   hints that the list scrolls. */
 .CompactWidget-expandedUsersList {
-    max-height: 220px;
+    /* Escaped: Flarum compiles this file as LESS, whose own min() can't
+       compare vh with px and fails the whole stylesheet (core does the same
+       in HeaderDropdown.less). */
+    max-height: ~"min(50vh, 400px)";
+    max-height: ~"min(50dvh, 400px)";
     overflow-y: auto;
+    overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
 }
 
@@ -272,6 +282,14 @@
 
 .CompactWidget--desktop .CompactWidget-expandedUser {
     font-size: 13px;
+}
+
+/* Mobile: same 13px text, and ~36px rows — each row is a profile link, and
+   26px rows packed edge to edge are easy to mis-tap. */
+.CompactWidget--mobile .CompactWidget-expandedUser {
+    font-size: 13px;
+    padding-top: 8px;
+    padding-bottom: 8px;
 }
 
 .CompactWidget-expandedUser:hover {
@@ -305,6 +323,10 @@
     padding-top: 3px;
 }
 
+.CompactWidget--mobile .CompactWidget-expandedUser--summary + .CompactWidget-expandedUser--summary {
+    padding-top: 8px;
+}
+
 .CompactWidget-expandedUser--hidden {
     cursor: default;
 }
@@ -333,7 +355,8 @@
     font-size: 11px;
 }
 
-.CompactWidget--desktop .CompactWidget-expandedUsername--muted {
+.CompactWidget--desktop .CompactWidget-expandedUsername--muted,
+.CompactWidget--mobile .CompactWidget-expandedUsername--muted {
     font-size: 12px;
 }
 
