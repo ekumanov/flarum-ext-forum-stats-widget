@@ -52,7 +52,9 @@
     gap: 3px;
     /* --cw-stat-size is set by fitStats() on mobile when a count would truncate */
     font-size: var(--cw-stat-size, 12px);
-    color: var(--muted-more-color, #999);
+    /* The bar sits on --control-bg, so use the text color core pairs with it:
+       the stats match the "Latest" button beside them, in any theme. */
+    color: var(--control-color, #667c99);
     cursor: default;
     white-space: nowrap;
     min-width: 0;
@@ -65,7 +67,6 @@
 
 .CompactWidget-stat i {
     font-size: calc(var(--cw-stat-size, 12px) - 1px);
-    opacity: 0.6;
     flex-shrink: 0;
 }
 
@@ -236,7 +237,7 @@
     gap: 5px;
     font-size: 10px;
     font-weight: 600;
-    color: var(--muted-more-color, #999);
+    color: var(--control-color, #667c99);
     text-transform: uppercase;
     letter-spacing: 0.04em;
     margin-bottom: 4px;
@@ -339,7 +340,7 @@
 /* Same size as the names: muted color, italics and the dotted/dashed badges
    already mark these rows as summaries — a 1px smaller size reads as a slip. */
 .CompactWidget-expandedUsername--muted {
-    color: var(--muted-color, #aab2bd);
+    color: var(--control-color, #667c99);
     font-style: italic;
 }
 
@@ -360,7 +361,7 @@
     height: 20px;
     padding: 0 4px;
     border-radius: 10px;
-    color: var(--muted-more-color, #999);
+    color: var(--control-color, #667c99);
     font-size: 9px;
     font-weight: 700;
     flex-shrink: 0;
